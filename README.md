@@ -16,5 +16,7 @@ FortyFetch is a Windows YouTube downloader with a modern dark UI and cyan accent
 - yt-dlp
 - FFmpeg
 
+(Note: If Windows SmartScreen displays a "Windows protected your PC" prompt, click More info -> Run anyway. This is standard for new, un-notarized open-source desktop apps)
+
 ## Disclaimer
 This project is for educational and personal-use purposes. Respect YouTube’s Terms of Service and creators’ rights.
