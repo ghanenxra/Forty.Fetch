@@ -4,21 +4,24 @@ import shutil
 import subprocess
 import threading
 import time
-from tkinter import messagebox
+from tkinter import filedialog, messagebox
 import customtkinter as ctk
 
-# Colors
-ACCENT_COLOR = "#00D2FF"
-ACCENT_HOVER = "#00A6CC"
-BG_COLOR = "#080A0F"
-CARD_COLOR = "#16181F"
-INPUT_COLOR = "#06080D"
-TEXT_MUTED = "#8D96A7"
+# Colors - Modern professional setup wizard theme
+ACCENT_COLOR = "#3B82F6"
+ACCENT_HOVER = "#2563EB"
+BG_COLOR = "#0F172A"
+CARD_COLOR = "#1E293B"
+INPUT_COLOR = "#0F172A"
+TEXT_MUTED = "#94A3B8"
+TEXT_LIGHT = "#F8FAFC"
 
 APP_NAME = "FortyFetch"
-DEFAULT_INSTALL_DIR = os.path.join(
-    os.environ.get("LOCALAPPDATA", os.path.join(os.path.expanduser("~"), "AppData", "Local")),
-    APP_NAME
+DEFAULT_INSTALL_DIR = os.path.normpath(
+    os.path.join(
+        os.environ.get("LOCALAPPDATA", os.path.join(os.path.expanduser("~"), "AppData", "Local")),
+        APP_NAME
+    )
 )
 
 
@@ -118,9 +121,9 @@ class InstallerApp(ctk.CTk):
 
         ctk.CTkLabel(
             header_frame,
-            text="FORTYFETCH INSTALLATION WIZARD",
-            font=("Impact", 28),
-            text_color=ACCENT_COLOR,
+            text="FortyFetch Installation Setup",
+            font=("Segoe UI", 22, "bold"),
+            text_color=TEXT_LIGHT,
         ).pack(anchor="w", padx=24, pady=(24, 0))
 
         # Main Area
@@ -132,41 +135,56 @@ class InstallerApp(ctk.CTk):
             self.main_frame,
             text="This wizard will install FortyFetch on your computer.\n\n"
                  "It is recommended to close all other applications before continuing.",
-            font=("Segoe UI", 14),
+            font=("Segoe UI", 13),
             justify="left",
-            text_color="#DCE6F9"
+            text_color="#CBD5E1"
         )
-        self.info_label.pack(anchor="w", pady=(10, 15))
+        self.info_label.pack(anchor="w", pady=(5, 10))
 
         # Path Card
-        path_card = ctk.CTkFrame(self.main_frame, fg_color=CARD_COLOR, corner_radius=12, border_width=1, border_color="#2B2E36")
-        path_card.pack(fill="x", pady=(0, 15))
+        self.path_card = ctk.CTkFrame(self.main_frame, fg_color=CARD_COLOR, corner_radius=12, border_width=1, border_color="#334155")
+        self.path_card.pack(fill="x", pady=(0, 15))
 
         ctk.CTkLabel(
-            path_card,
+            self.path_card,
             text="Destination Folder:",
             font=("Segoe UI", 12, "bold"),
-            text_color=ACCENT_COLOR
+            text_color=TEXT_LIGHT
         ).pack(anchor="w", padx=16, pady=(10, 2))
 
+        path_row = ctk.CTkFrame(self.path_card, fg_color="transparent")
+        path_row.pack(fill="x", padx=16, pady=(0, 12))
+
         self.path_entry = ctk.CTkEntry(
-            path_card,
+            path_row,
             height=36,
             fg_color=INPUT_COLOR,
-            border_color="#2F323C",
-            text_color="#DCE6F9",
+            border_color="#475569",
+            text_color="#F8FAFC",
             font=("Segoe UI", 12)
         )
         self.path_entry.insert(0, self.install_dir)
-        self.path_entry.configure(state="disabled")
-        self.path_entry.pack(fill="x", padx=16, pady=(0, 12))
+        self.path_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+
+        self.browse_btn = ctk.CTkButton(
+            path_row,
+            text="Browse...",
+            width=90,
+            height=36,
+            fg_color="#334155",
+            hover_color="#475569",
+            text_color=TEXT_LIGHT,
+            font=("Segoe UI", 12, "bold"),
+            command=self.browse_folder
+        )
+        self.browse_btn.pack(side="right")
 
         # Options Card
-        options_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        options_frame.pack(fill="x", pady=5)
+        self.options_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        self.options_frame.pack(fill="x", pady=5)
 
         self.desktop_chk = ctk.CTkCheckBox(
-            options_frame,
+            self.options_frame,
             text="Create Desktop Shortcut",
             variable=self.desktop_var,
             font=("Segoe UI", 12),
@@ -176,7 +194,7 @@ class InstallerApp(ctk.CTk):
         self.desktop_chk.pack(side="left", padx=(0, 20))
 
         self.start_menu_chk = ctk.CTkCheckBox(
-            options_frame,
+            self.options_frame,
             text="Create Start Menu Shortcut",
             variable=self.start_menu_var,
             font=("Segoe UI", 12),
@@ -194,8 +212,9 @@ class InstallerApp(ctk.CTk):
             text="Cancel",
             width=100,
             height=38,
-            fg_color="#2D313A",
-            hover_color="#3A404A",
+            fg_color="#334155",
+            hover_color="#475569",
+            text_color=TEXT_LIGHT,
             font=("Segoe UI", 12, "bold"),
             command=self.destroy
         )
@@ -208,7 +227,7 @@ class InstallerApp(ctk.CTk):
             height=38,
             fg_color=ACCENT_COLOR,
             hover_color=ACCENT_HOVER,
-            text_color="#03131B",
+            text_color="#0F172A",
             font=("Segoe UI", 12, "bold"),
             command=self.start_installation
         )
@@ -219,7 +238,7 @@ class InstallerApp(ctk.CTk):
             self.main_frame,
             height=12,
             corner_radius=8,
-            fg_color="#070A0F",
+            fg_color="#0F172A",
             progress_color=ACCENT_COLOR
         )
         self.progress_bar.set(0)
@@ -231,7 +250,19 @@ class InstallerApp(ctk.CTk):
             text_color=TEXT_MUTED
         )
 
+    def browse_folder(self) -> None:
+        selected_dir = filedialog.askdirectory(initialdir=self.install_dir)
+        if selected_dir:
+            self.install_dir = os.path.normpath(selected_dir)
+            self.path_entry.configure(state="normal")
+            self.path_entry.delete(0, "end")
+            self.path_entry.insert(0, self.install_dir)
+
     def start_installation(self) -> None:
+        entered_path = self.path_entry.get().strip()
+        if entered_path:
+            self.install_dir = os.path.normpath(entered_path)
+
         if not self.src_exe or not os.path.exists(self.src_exe):
             messagebox.showerror(
                 "Error",
@@ -246,8 +277,8 @@ class InstallerApp(ctk.CTk):
 
         # Swap view: Hide paths and options, show progress
         self.info_label.configure(text="Installing FortyFetch on your computer...")
-        self.path_entry.master.pack_forget()  # hide path card
-        self.desktop_chk.master.pack_forget()  # hide options
+        self.path_card.pack_forget()  # hide path card
+        self.options_frame.pack_forget()  # hide options
 
         self.progress_bar.pack(fill="x", pady=(40, 10))
         self.progress_label.pack(anchor="w")
