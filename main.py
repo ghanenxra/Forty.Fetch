@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import shutil
@@ -5,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import traceback
 import webbrowser
 import zipfile
 from tkinter import filedialog, messagebox
@@ -23,10 +25,11 @@ CARD_COLOR = "#16181F"
 INPUT_COLOR = "#06080D"
 TEXT_MUTED = "#8D96A7"
 
-APP_TITLE = "FortyFetch - High Speed Youtube Downloader"
+APP_VERSION = "3.0.0"
+APP_TITLE = f"FortyFetch v{APP_VERSION} - High Speed Youtube Downloader"
 DISCORD_URL = "https://discord.com/users/1323161662739714120"
 GITHUB_URL = "https://github.com/ghanenxra"
-PAYPAL_USERNAME = "@ghanenxra"
+PAYPAL_URL = "https://www.paypal.com/paypalme/ghanenxra"
 UPI_ID = "9024810096@fam"
 
 QUALITY_OPTIONS = [
@@ -78,12 +81,16 @@ class FortyFetchApp(ctk.CTk):
         self.save_path = os.path.join(os.path.expanduser("~"), "Downloads")
         self.selected_quality = ctk.StringVar(value="1080p 60fps")
 
+        self.pending_update_path = None
+        self.protocol("WM_DELETE_WINDOW", self.on_exit)
+
         self._set_icon()
         self._build_ui()
 
         self.after(300, self.check_bundled_tools)
         if is_frozen_build():
             self.speed_label.configure(text="Bundled build mode")
+            threading.Thread(target=self.check_app_update_silently, daemon=True).start()
         else:
             threading.Thread(target=self.check_and_update_ytdlp, daemon=True).start()
 
@@ -334,6 +341,140 @@ class FortyFetchApp(ctk.CTk):
         threading.Thread(target=self.check_and_update_dependencies, daemon=True).start()
 
     def check_and_update_dependencies(self) -> None:
+        if is_frozen_build():
+            try:
+                tag, download_url = self._fetch_latest_app_release_details()
+                if tag and download_url and self._is_version_newer(tag, APP_VERSION):
+                    self.after(0, lambda: self.prompt_and_install_app_update(tag, download_url))
+                    return
+            except Exception:
+                traceback.print_exc()
+
+        self._check_and_update_tools()
+
+    def _fetch_latest_app_release_details(self) -> tuple[str | None, str | None]:
+        try:
+            req = urlrequest.Request(
+                "https://api.github.com/repos/ghanenxra/Forty.Fetch/releases/latest",
+                headers={"User-Agent": "FortyFetch/1.0"},
+            )
+            with urlrequest.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8", errors="replace"))
+
+            tag = data.get("tag_name", "").strip().lstrip("vV")
+
+            download_url = None
+            for asset in data.get("assets", []):
+                name = asset.get("name", "")
+                if name.endswith(".exe") and "setup" not in name.lower():
+                    download_url = asset.get("browser_download_url")
+                    break
+
+            if not download_url:
+                for asset in data.get("assets", []):
+                    name = asset.get("name", "")
+                    if name.endswith(".exe"):
+                        download_url = asset.get("browser_download_url")
+                        break
+
+            return tag, download_url
+        except Exception:
+            traceback.print_exc()
+            return None, None
+
+    def check_app_update_silently(self) -> None:
+        try:
+            tag, download_url = self._fetch_latest_app_release_details()
+            if tag and download_url and self._is_version_newer(tag, APP_VERSION):
+                temp_dir = tempfile.gettempdir()
+                temp_file_path = os.path.join(temp_dir, f"FortyFetch_update_{tag}.exe")
+
+                self._download_file(download_url, temp_file_path)
+
+                if os.path.exists(temp_file_path) and os.path.getsize(temp_file_path) > 1024 * 1024:
+                    self.pending_update_path = temp_file_path
+        except Exception:
+            pass
+
+    def prompt_and_install_app_update(self, tag: str, download_url: str) -> None:
+        want_update = messagebox.askyesno(
+            "FortyFetch Update",
+            f"A new version of FortyFetch (v{tag}) is available.\n\n"
+            "Would you like to download and install it now?\n"
+            "The app will restart automatically after the update.",
+        )
+        if not want_update:
+            self.status_label.configure(text="Checking tool updates...", text_color="#F5F9FF")
+            threading.Thread(target=self._check_and_update_tools, daemon=True).start()
+            return
+
+        self.status_label.configure(text=f"Downloading FortyFetch v{tag}...", text_color=ACCENT_COLOR)
+        self.progress_bar.set(0)
+        self.percent_label.configure(text="0%")
+        self.speed_label.configure(text="Connecting...")
+
+        def download_and_apply():
+            try:
+                temp_dir = tempfile.gettempdir()
+                temp_file_path = os.path.join(temp_dir, f"FortyFetch_manual_update_{tag}.exe")
+
+                req = urlrequest.Request(download_url, headers={"User-Agent": "FortyFetch/1.0"})
+                with urlrequest.urlopen(req, timeout=90) as resp:
+                    total_size = int(resp.headers.get('content-length', 0))
+                    downloaded = 0
+                    block_size = 1024 * 64
+                    with open(temp_file_path, "wb") as out:
+                        while True:
+                            block = resp.read(block_size)
+                            if not block:
+                                break
+                            out.write(block)
+                            downloaded += len(block)
+                            if total_size > 0:
+                                percent = (downloaded / total_size) * 100
+                                self.after(0, lambda p=percent: self._update_download_progress(p))
+
+                if os.path.exists(temp_file_path) and os.path.getsize(temp_file_path) > 1024 * 1024:
+                    self.after(0, lambda: self._apply_manual_update_and_restart(temp_file_path))
+                else:
+                    raise RuntimeError("Downloaded file is invalid or too small.")
+            except Exception as exc:
+                traceback.print_exc()
+                error_msg = str(exc)[:220]
+                self.after(0, lambda: messagebox.showerror("FortyFetch Update", f"Update failed: {error_msg}"))
+                self.after(0, lambda: self.status_label.configure(text="Update failed", text_color="#FF6B6B"))
+                self.after(0, self._reset_after_download)
+                self.after(2000, lambda: threading.Thread(target=self._check_and_update_tools, daemon=True).start())
+
+        threading.Thread(target=download_and_apply, daemon=True).start()
+
+    def _update_download_progress(self, percent: float) -> None:
+        self.progress_bar.set(percent / 100)
+        self.percent_label.configure(text=f"{int(percent)}%")
+        self.speed_label.configure(text="Downloading setup files...")
+
+    def _apply_manual_update_and_restart(self, temp_file_path: str) -> None:
+        current_exe = sys.executable
+        powershell_cmd = f"Start-Sleep -Seconds 2; Copy-Item -Path '{temp_file_path}' -Destination '{current_exe}' -Force; Start-Process '{current_exe}'; Remove-Item -Path '{temp_file_path}'"
+        try:
+            subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", powershell_cmd], creationflags=subprocess.CREATE_NO_WINDOW)
+            self.destroy()
+        except Exception as exc:
+            traceback.print_exc()
+            messagebox.showerror("FortyFetch Update", f"Failed to restart and apply update: {exc}")
+
+    def on_exit(self) -> None:
+        if getattr(self, "pending_update_path", None) and os.path.exists(self.pending_update_path):
+            current_exe = sys.executable
+            new_exe = self.pending_update_path
+            powershell_cmd = f"Start-Sleep -Seconds 2; Copy-Item -Path '{new_exe}' -Destination '{current_exe}' -Force; Remove-Item -Path '{new_exe}'"
+            try:
+                subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", powershell_cmd], creationflags=subprocess.CREATE_NO_WINDOW)
+            except Exception:
+                traceback.print_exc()
+        self.destroy()
+
+    def _check_and_update_tools(self) -> None:
         updates_done: list[str] = []
         no_updates: list[str] = []
         warnings: list[str] = []
@@ -575,18 +716,26 @@ class FortyFetchApp(ctk.CTk):
             speed = data.get("_speed_str", "Waiting...")
             eta = data.get("_eta_str", "")
             try:
-                p_val = max(0.0, min(100.0, float(p_str)))
+                # Strip ANSI escape codes if present
+                clean_p_str = re.sub(r'\x1b\[[0-9;]*m', '', p_str)
+                match = re.search(r'\d+\.\d+|\d+', clean_p_str)
+                p_val = float(match.group(0)) if match else 0.0
+                p_val = max(0.0, min(100.0, p_val))
             except Exception:
                 p_val = 0.0
 
-            self.progress_bar.set(p_val / 100)
-            self.percent_label.configure(text=f"{int(p_val)}%")
             eta_text = f" | ETA {eta}" if eta else ""
-            self.speed_label.configure(text=f"{speed}{eta_text}")
-            self.status_label.configure(text="Fetching data...")
+
+            def _update():
+                self.progress_bar.set(p_val / 100)
+                self.percent_label.configure(text=f"{int(p_val)}%")
+                self.speed_label.configure(text=f"{speed}{eta_text}")
+                self.status_label.configure(text="Fetching data...")
+
+            self.after(0, _update)
 
         elif status == "finished":
-            self.status_label.configure(text="Finalizing with FFmpeg...")
+            self.after(0, lambda: self.status_label.configure(text="Finalizing with FFmpeg..."))
 
     def start_download_thread(self) -> None:
         url = self.url_entry.get().strip()
@@ -608,20 +757,15 @@ class FortyFetchApp(ctk.CTk):
         self.percent_label.configure(text="0%")
         self.speed_label.configure(text="Waiting...")
 
-        threading.Thread(target=self.download_video, daemon=True).start()
+        choice = self.selected_quality.get()
+        threading.Thread(target=self.download_video, args=(url, choice), daemon=True).start()
 
     def _format_for_quality(self, choice: str) -> tuple[str, bool]:
         if "MP3" in choice:
             return "bestaudio/best", True
 
-        digits = "".join(ch for ch in choice if ch.isdigit())
-        height = "1080"
-        if choice.startswith("2160"):
-            height = "2160"
-        elif choice.startswith("4320"):
-            height = "4320"
-        elif digits:
-            height = digits[:4]
+        match = re.search(r"(\d+)p", choice)
+        height = match.group(1) if match else "1080"
 
         fmt = (
             f"bestvideo[height<={height}][fps<=60]+bestaudio/"
@@ -629,9 +773,7 @@ class FortyFetchApp(ctk.CTk):
         )
         return fmt, False
 
-    def download_video(self) -> None:
-        url = self.url_entry.get().strip()
-        choice = self.selected_quality.get()
+    def download_video(self, url: str, choice: str) -> None:
         fmt, is_mp3 = self._format_for_quality(choice)
 
         ydl_opts: dict = {
@@ -643,12 +785,6 @@ class FortyFetchApp(ctk.CTk):
             "format": fmt,
             "merge_output_format": "mp4",
             "nocheckcertificate": True,
-            "user_agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/122.0.0.0 Safari/537.36"
-            ),
-            "referer": "https://www.youtube.com/",
         }
 
         if is_mp3:
@@ -665,11 +801,20 @@ class FortyFetchApp(ctk.CTk):
                 info = ydl.extract_info(url, download=True)
                 title = info.get("title", "download") if isinstance(info, dict) else "download"
 
-            self.after(0, lambda: self.status_label.configure(text=f"Completed: {title}", text_color=ACCENT_COLOR))
-            self.after(0, lambda: messagebox.showinfo("FortyFetch", "Download successful."))
+            def _success():
+                self.status_label.configure(text=f"Completed: {title}", text_color=ACCENT_COLOR)
+                messagebox.showinfo("FortyFetch", "Download successful.")
+
+            self.after(0, _success)
         except Exception as exc:
-            self.after(0, lambda: self.status_label.configure(text="Download failed", text_color="#FF6B6B"))
-            self.after(0, lambda: messagebox.showerror("FortyFetch", f"Error: {str(exc)[:220]}"))
+            traceback.print_exc()
+            error_msg = str(exc)[:220]
+            
+            def _error():
+                self.status_label.configure(text="Download failed", text_color="#FF6B6B")
+                messagebox.showerror("FortyFetch", f"Error: {error_msg}")
+
+            self.after(0, _error)
         finally:
             self.after(0, self._reset_after_download)
 
@@ -702,7 +847,19 @@ class FortyFetchApp(ctk.CTk):
             ctk.CTkLabel(pop, text="QR code not found in assets.", text_color="#FF6B6B", font=("Segoe UI", 16)).pack()
 
         ctk.CTkLabel(pop, text=f"UPI: {UPI_ID}", font=("Segoe UI", 18, "bold"), text_color=ACCENT_COLOR).pack(pady=(10, 4))
-        ctk.CTkLabel(pop, text=f"PayPal: {PAYPAL_USERNAME}", font=("Segoe UI", 18, "bold"), text_color=ACCENT_COLOR).pack(pady=(2, 14))
+        
+        ctk.CTkButton(
+            pop,
+            text="PayPal Me",
+            width=200,
+            height=38,
+            corner_radius=10,
+            fg_color="#003087",
+            hover_color="#0079C1",
+            text_color="#FFFFFF",
+            font=("Segoe UI", 14, "bold"),
+            command=lambda: webbrowser.open(PAYPAL_URL),
+        ).pack(pady=(8, 14))
 
         ctk.CTkButton(
             pop,
