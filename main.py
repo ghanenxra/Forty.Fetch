@@ -29,7 +29,7 @@ APP_VERSION = "3.0.0"
 APP_TITLE = f"FortyFetch v{APP_VERSION} - High Speed Youtube Downloader"
 DISCORD_URL = "https://discord.com/users/1323161662739714120"
 GITHUB_URL = "https://github.com/ghanenxra"
-PAYPAL_USERNAME = "@ghanenxra"
+PAYPAL_URL = "https://www.paypal.com/paypalme/ghanenxra"
 UPI_ID = "9024810096@fam"
 
 QUALITY_OPTIONS = [
@@ -847,7 +847,19 @@ class FortyFetchApp(ctk.CTk):
             ctk.CTkLabel(pop, text="QR code not found in assets.", text_color="#FF6B6B", font=("Segoe UI", 16)).pack()
 
         ctk.CTkLabel(pop, text=f"UPI: {UPI_ID}", font=("Segoe UI", 18, "bold"), text_color=ACCENT_COLOR).pack(pady=(10, 4))
-        ctk.CTkLabel(pop, text=f"PayPal: {PAYPAL_USERNAME}", font=("Segoe UI", 18, "bold"), text_color=ACCENT_COLOR).pack(pady=(2, 14))
+        
+        ctk.CTkButton(
+            pop,
+            text="PayPal Me",
+            width=200,
+            height=38,
+            corner_radius=10,
+            fg_color="#003087",
+            hover_color="#0079C1",
+            text_color="#FFFFFF",
+            font=("Segoe UI", 14, "bold"),
+            command=lambda: webbrowser.open(PAYPAL_URL),
+        ).pack(pady=(8, 14))
 
         ctk.CTkButton(
             pop,
