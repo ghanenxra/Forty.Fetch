@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import traceback
 import webbrowser
 import zipfile
 from tkinter import filedialog, messagebox
@@ -575,18 +576,26 @@ class FortyFetchApp(ctk.CTk):
             speed = data.get("_speed_str", "Waiting...")
             eta = data.get("_eta_str", "")
             try:
-                p_val = max(0.0, min(100.0, float(p_str)))
+                # Strip ANSI escape codes if present
+                clean_p_str = re.sub(r'\x1b\[[0-9;]*m', '', p_str)
+                match = re.search(r'\d+\.\d+|\d+', clean_p_str)
+                p_val = float(match.group(0)) if match else 0.0
+                p_val = max(0.0, min(100.0, p_val))
             except Exception:
                 p_val = 0.0
 
-            self.progress_bar.set(p_val / 100)
-            self.percent_label.configure(text=f"{int(p_val)}%")
             eta_text = f" | ETA {eta}" if eta else ""
-            self.speed_label.configure(text=f"{speed}{eta_text}")
-            self.status_label.configure(text="Fetching data...")
+
+            def _update():
+                self.progress_bar.set(p_val / 100)
+                self.percent_label.configure(text=f"{int(p_val)}%")
+                self.speed_label.configure(text=f"{speed}{eta_text}")
+                self.status_label.configure(text="Fetching data...")
+
+            self.after(0, _update)
 
         elif status == "finished":
-            self.status_label.configure(text="Finalizing with FFmpeg...")
+            self.after(0, lambda: self.status_label.configure(text="Finalizing with FFmpeg..."))
 
     def start_download_thread(self) -> None:
         url = self.url_entry.get().strip()
@@ -608,20 +617,15 @@ class FortyFetchApp(ctk.CTk):
         self.percent_label.configure(text="0%")
         self.speed_label.configure(text="Waiting...")
 
-        threading.Thread(target=self.download_video, daemon=True).start()
+        choice = self.selected_quality.get()
+        threading.Thread(target=self.download_video, args=(url, choice), daemon=True).start()
 
     def _format_for_quality(self, choice: str) -> tuple[str, bool]:
         if "MP3" in choice:
             return "bestaudio/best", True
 
-        digits = "".join(ch for ch in choice if ch.isdigit())
-        height = "1080"
-        if choice.startswith("2160"):
-            height = "2160"
-        elif choice.startswith("4320"):
-            height = "4320"
-        elif digits:
-            height = digits[:4]
+        match = re.search(r"(\d+)p", choice)
+        height = match.group(1) if match else "1080"
 
         fmt = (
             f"bestvideo[height<={height}][fps<=60]+bestaudio/"
@@ -629,9 +633,7 @@ class FortyFetchApp(ctk.CTk):
         )
         return fmt, False
 
-    def download_video(self) -> None:
-        url = self.url_entry.get().strip()
-        choice = self.selected_quality.get()
+    def download_video(self, url: str, choice: str) -> None:
         fmt, is_mp3 = self._format_for_quality(choice)
 
         ydl_opts: dict = {
@@ -643,12 +645,6 @@ class FortyFetchApp(ctk.CTk):
             "format": fmt,
             "merge_output_format": "mp4",
             "nocheckcertificate": True,
-            "user_agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/122.0.0.0 Safari/537.36"
-            ),
-            "referer": "https://www.youtube.com/",
         }
 
         if is_mp3:
@@ -665,11 +661,20 @@ class FortyFetchApp(ctk.CTk):
                 info = ydl.extract_info(url, download=True)
                 title = info.get("title", "download") if isinstance(info, dict) else "download"
 
-            self.after(0, lambda: self.status_label.configure(text=f"Completed: {title}", text_color=ACCENT_COLOR))
-            self.after(0, lambda: messagebox.showinfo("FortyFetch", "Download successful."))
+            def _success():
+                self.status_label.configure(text=f"Completed: {title}", text_color=ACCENT_COLOR)
+                messagebox.showinfo("FortyFetch", "Download successful.")
+
+            self.after(0, _success)
         except Exception as exc:
-            self.after(0, lambda: self.status_label.configure(text="Download failed", text_color="#FF6B6B"))
-            self.after(0, lambda: messagebox.showerror("FortyFetch", f"Error: {str(exc)[:220]}"))
+            traceback.print_exc()
+            error_msg = str(exc)[:220]
+            
+            def _error():
+                self.status_label.configure(text="Download failed", text_color="#FF6B6B")
+                messagebox.showerror("FortyFetch", f"Error: {error_msg}")
+
+            self.after(0, _error)
         finally:
             self.after(0, self._reset_after_download)
 

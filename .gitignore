@@ -1,0 +1,23 @@
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# PyInstaller / Packaging build output
+build/
+dist/
+*.spec
+
+# Downloaded media files (if any are saved to workspace)
+*.mp3
+*.mp4
+*.webm
+*.m4a
+*.mkv
