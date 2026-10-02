@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FortyFetch — High Speed YouTube Downloader for Windows</title>
+  <meta name="description" content="Download YouTube videos up to 8K 60fps, 320kbps MP3 audio, playlists, and Shorts. Native Windows performance with zero ads, zero tracking, and instant downloads.">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #05080D;
+      --bg-gradient: radial-gradient(circle at 50% 0%, rgba(0, 217, 255, 0.08) 0%, rgba(5, 8, 13, 0) 65%);
+      --panel: #0B1420;
+      --panel-elevated: #101B28;
+      --panel-card: rgba(11, 20, 32, 0.75);
+      --border: #162334;
+      --border-glow: rgba(0, 217, 255, 0.3);
+      --cyan: #00D9FF;
+      --cyan-glow: rgba(0, 217, 255, 0.25);
+      --cyan-dark: #008FA8;
+      --blue: #168CFF;
+      --green: #10B981;
+      --orange: #FF813F;
+      --discord: #5865F2;
+      --pink: #FF4FA3;
+      --text: #FFFFFF;
+      --text-muted: #8D96A7;
+      --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: var(--font-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient background grid */
+    .bg-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-size: 50px 50px;
+      background-image: 
+        linear-gradient(to right, rgba(22, 35, 52, 0.25) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(22, 35, 52, 0.25) 1px, transparent 1px);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header Navigation */
+    header {
+      padding: 24px 0;
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      background: rgba(5, 8, 13, 0.75);
+      border-bottom: 1px solid rgba(22, 35, 52, 0.6);
+      z-index: 100;
+    }
+
+    .nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1.5rem;
+      letter-spacing: -0.5px;
+    }
+    .logo .bold { color: #FFFFFF; }
+    .logo .cyan { color: var(--cyan); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: color 0.2s ease;
+    }
+    .nav-links a:hover {
+      color: var(--cyan);
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .nav-cta:hover {
+      background: var(--cyan);
+      color: var(--bg);
+      box-shadow: 0 0 20px var(--cyan-glow);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+      position: relative;
+    }
+
+    .version-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: rgba(11, 20, 32, 0.9);
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 5.5vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, #FFFFFF 30%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-sub {
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 760px;
+      margin: 0 auto 36px;
+      font-weight: 400;
+    }
+
+    /* Download Buttons */
+    .download-group {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .btn-download-primary {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--cyan);
+      color: #05080D;
+      padding: 16px 32px;
+      border-radius: 16px;
+      text-decoration: none;
+      font-weight: 700;
+      box-shadow: 0 10px 30px var(--cyan-glow);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid var(--cyan);
+    }
+    .btn-download-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(0, 217, 255, 0.4);
+      background: #26e1ff;
+    }
+
+    .btn-download-secondary {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--panel-elevated);
+      color: var(--text);
+      padding: 16px 30px;
+      border-radius: 16px;
+      text-decoration: none;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-download-secondary:hover {
+      transform: translateY(-3px);
+      border-color: var(--cyan);
+      background: #142233;
+      box-shadow: 0 12px 30px rgba(0, 217, 255, 0.15);
+    }
+
+    .btn-icon {
+      font-size: 1.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-text {
+      text-align: left;
+    }
+    .btn-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .btn-sub {
+      font-size: 0.8rem;
+      opacity: 0.85;
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    .specs-line {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .specs-line span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* App Mockup Preview */
+    .preview-container {
+      margin: 60px auto 0;
+      max-width: 1080px;
+      position: relative;
+    }
+    .preview-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(0, 217, 255, 0.15) 0%, rgba(22, 140, 255, 0.05) 50%, transparent 80%);
+      filter: blur(50px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .app-window {
+      position: relative;
+      z-index: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 217, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    /* Window Titlebar */
+    .titlebar {
+      background: #080D14;
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .window-controls {
+      display: flex;
+      gap: 8px;
+    }
+    .win-btn {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #1A2838;
+      display: inline-block;
+    }
+    .win-btn.close { background: #FF5F56; }
+    .win-btn.min { background: #FFBD2E; }
+    .win-btn.max { background: #27C93F; }
+
+    /* Window Body */
+    .window-body {
+      display: flex;
+      min-height: 520px;
+    }
+
+    /* App Sidebar */
+    .app-sidebar {
+      width: 240px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .app-sidebar-logo {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .app-sidebar-sub {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
+    }
+    .app-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .app-nav-item.active {
+      background: rgba(0, 217, 255, 0.1);
+      color: var(--cyan);
+      border: 1px solid var(--cyan);
+    }
+
+    .app-sidebar-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+    .app-badge-box {
+      display: inline-block;
+      padding: 3px 8px;
+      background: #060C14;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+    .app-credit {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .app-author {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* App Main Content */
+    .app-main {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .app-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .app-action-badge {
+      padding: 5px 12px;
+      border-radius: 8px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--green);
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    /* Features mini-row */
+    .app-features-mini {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .mini-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .mini-card-icon {
+      color: var(--cyan);
+      font-size: 1.1rem;
+    }
+    .mini-card-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .mini-card-desc {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    /* App Download Card */
+    .app-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .card-header-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 10px;
+    }
+    .card-header-line .support-tag {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .mock-input {
+      background: #060B12;
+      border: 1px solid var(--cyan);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+    }
+    .mock-url {
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+    .mock-detected {
+      color: var(--green);
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+
+    .mock-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .mock-field {
+      background: var(--panel-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .mock-start-btn {
+      background: var(--cyan);
+      color: #05080D;
+      text-align: center;
+      padding: 10px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 16px var(--cyan-glow);
+    }
+
+    /* Mock Progress Card */
+    .mock-progress-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .mock-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 4px solid #101B28;
+      border-top-color: var(--cyan);
+      border-right-color: var(--cyan);
+      border-bottom-color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+    .mock-progress-info {
+      flex: 1;
+    }
+    .mock-p-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .mock-bar {
+      height: 6px;
+      background: #060B12;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .mock-bar-fill {
+      width: 92%;
+      height: 100%;
+      background: var(--cyan);
+    }
+    .mock-speed {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* Features Grid */
+    .features-section {
+      padding: 90px 0;
+    }
+    .section-title {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    .section-title h2 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+    .section-title p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .feature-box {
+      background: var(--panel-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      backdrop-filter: blur(10px);
+      transition: all 0.25s ease;
+    }
+    .feature-box:hover {
+      border-color: var(--cyan);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0, 217, 255, 0.1);
+    }
+    .feature-icon-bubble {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid rgba(0, 217, 255, 0.25);
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 18px;
+    }
+    .feature-box h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .feature-box p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Quality presets table */
+    .quality-section {
+      padding: 40px 0 90px;
+    }
+    .quality-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .quality-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .q-tag {
+      padding: 10px 18px;
+      border-radius: 12px;
+      background: var(--panel-elevated);
+      border: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+    .q-tag.featured {
+      border-color: var(--cyan);
+      background: rgba(0, 217, 255, 0.1);
+      color: var(--cyan);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      background: #04060A;
+      padding: 60px 0 40px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+    .footer-brand {
+      max-width: 380px;
+    }
+    .footer-brand p {
+      margin-top: 12px;
+      line-height: 1.6;
+    }
+    .footer-links-group {
+      display: flex;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+    .footer-col h4 {
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .footer-col a {
+      display: block;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 10px;
+      transition: color 0.2s ease;
+    }
+    .footer-col a:hover {
+      color: var(--cyan);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(22, 35, 52, 0.5);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+    }
+    .author-badge {
+      color: var(--pink);
+      font-weight: 700;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 860px) {
+      .window-body { flex-direction: column; }
+      .app-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav-inner">
+      <a href="#" class="logo">
+        <span class="bold">FORTY.</span><span class="cyan">FETCH</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#preview">Interface</a>
+        <a href="#quality">8K Quality</a>
+        <a href="https://github.com/ghanenxra/Forty.Fetch" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://discord.com/users/1323161662739714120" target="_blank" rel="noopener">Discord</a>
+      </nav>
+      <a href="#download" class="nav-cta">⬇ Download App</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero" id="download">
+    <div class="container">
+      <div class="version-tag">
+        <span class="status-dot"></span>
+        <span>FortyFetch <strong class="release-tag">v3.0.2</strong> • Fast Windows Downloader</span>
+      </div>
+
+      <h1>
+        High-Speed YouTube Downloads.<br>
+        <span class="highlight">Re-engineered for Windows.</span>
+      </h1>
+
+      <p class="hero-sub">
+        Download videos up to <strong>8K 60fps</strong>, lossless <strong>320kbps MP3 audio</strong>, full playlists, and Shorts. 
+        Native Windows desktop speed with zero telemetry, zero ads, and instant launching.
+      </p>
+
+      <!-- Download Action Buttons (Connected directly to latest commit release) -->
+      <div class="download-group">
+        <a id="btn-download-setup" class="btn-download-primary" href="https://github.com/ghanenxra/Forty.Fetch/releases/latest/download/FortyFetch_Setup.exe">
+          <div class="btn-icon">📦</div>
+          <div class="btn-text">
+            <div class="btn-title">Download Setup (Recommended)</div>
+            <div class="btn-sub">FortyFetch_Setup.exe • <span id="setup-size">~145 MB</span></div>
+          </div>
+        </a>
+
+        <a id="btn-download-exe" class="btn-download-secondary" href="https://github.com/ghanenxra/Forty.Fetch/releases/latest/download/FortyFetch.exe">
+          <div class="btn-icon">⚡</div>
+          <div class="btn-text">
+            <div class="btn-title">Standalone Portable (.exe)</div>
+            <div class="btn-sub">FortyFetch.exe • <span id="exe-size">~113 MB</span></div>
+          </div>
+        </a>
+      </div>
+
+      <div class="specs-line">
+        <span>✓ Direct 1-Click Download</span>
+        <span>✓ Always Latest Release</span>
+        <span>✓ Windows 10 & 11 (64-bit)</span>
+        <span>✓ Bundled FFmpeg Core</span>
+      </div>
+
+      <!-- App Interface Showcase Mockup -->
+      <div class="preview-container" id="preview">
+        <div class="preview-glow"></div>
+        <div class="app-window">
+          <!-- Windows Title Bar -->
+          <div class="titlebar">
+            <span>FortyFetch <span class="release-tag">v3.0.2</span> - High Speed YouTube Downloader</span>
+            <div class="window-controls">
+              <span class="win-btn min"></span>
+              <span class="win-btn max"></span>
+              <span class="win-btn close"></span>
+            </div>
+          </div>
+
+          <div class="window-body">
+            <!-- Sidebar -->
+            <div class="app-sidebar">
+              <div>
+                <div class="app-sidebar-logo">
+                  <span style="color: #fff;">FORTY.</span><span style="color: var(--cyan);">FETCH</span>
+                </div>
+                <div class="app-sidebar-sub">HIGH SPEED DOWNLOADER</div>
+
+                <div class="app-nav-item active">▶&nbsp;&nbsp;Home</div>
+                <div class="app-nav-item">⬇&nbsp;&nbsp;Downloads</div>
+                <div class="app-nav-item">⚙&nbsp;&nbsp;Settings</div>
+                <div class="app-nav-item">ⓘ&nbsp;&nbsp;About</div>
+              </div>
+
+              <div class="app-sidebar-footer">
+                <div class="app-badge-box">v3.0.2</div>
+                <div class="app-credit">Powered by</div>
+                <div class="app-author">Forty Quinn</div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="app-main">
+              <div class="app-topbar">
+                <span>DASHBOARD // DOWNLOADER</span>
+                <span class="app-action-badge">↻ Check for Updates</span>
+              </div>
+
+              <div class="app-features-mini">
+                <div class="mini-card">
+                  <div class="mini-card-icon">⚡</div>
+                  <div>
+                    <div class="mini-card-title">Blazing Fast</div>
+                    <div class="mini-card-desc">High speed downloads</div>
+                  </div>
+                </div>
+                <div class="mini-card">
+                  <div class="mini-card-icon">🛡</div>
+                  <div>
+                    <div class="mini-card-title">Safe & Reliable</div>
+                    <div class="mini-card-desc">No ads, No tracking</div>
+                  </div>
+                </div>
+                <div class="mini-card">
+                  <div class="mini-card-icon">🎬</div>
+                  <div>
+                    <div class="mini-card-title">Multiple Formats</div>
+                    <div class="mini-card-desc">Video, Audio, Playlists</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main Link Card -->
+              <div class="app-card">
+                <div class="card-header-line">
+                  <span>🔗 PASTE YOUTUBE LINK</span>
+                  <span class="support-tag">Supports: Video, Playlist, Channel, Shorts ℹ</span>
+                </div>
+
+                <div class="mock-input">
+                  <span class="mock-url">▶ https://www.youtube.com/watch?v=dQw4w9WgXcQ</span>
+                  <span class="mock-detected">✓ Link Detected</span>
+                </div>
+
+                <div class="mock-row">
+                  <div class="mock-field">
+                    <span style="color: var(--text-muted);">🖥 Quality</span>
+                    <span style="color: var(--cyan);">4320p 60fps (8K) ▾</span>
+                  </div>
+                  <div class="mock-field">
+                    <span style="color: var(--text-muted);">📁 Save Folder</span>
+                    <span>C:\Users\Downloads\ 📂</span>
+                  </div>
+                </div>
+
+                <div class="mock-start-btn">⬇ &nbsp;START FETCH</div>
+              </div>
+
+              <!-- Progress Card -->
+              <div class="mock-progress-card">
+                <div class="mock-circle">92%</div>
+                <div class="mock-progress-info">
+                  <div class="mock-p-header">
+                    <span>Downloading stream...</span>
+                    <span style="color: var(--cyan);">92%</span>
+                  </div>
+                  <div class="mock-bar">
+                    <div class="mock-bar-fill"></div>
+                  </div>
+                  <div class="mock-speed">Speed: 48.2 MB/s • ETA 00:03</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="features-section" id="features">
+    <div class="container">
+      <div class="section-title">
+        <h2>Built for Speed & Desktop Precision</h2>
+        <p>Engineered without bloated web-wrappers. Native, lightweight, and blazingly responsive.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-box">
+          <div class="feature-icon-bubble">⚡</div>
+          <h3>Up to 8K 60fps Resolution</h3>
+          <p>Extract maximum video fidelity. Supports 4320p (8K), 2160p (4K), 1440p, 1080p 60fps with automatic FFmpeg video & audio stream merging.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-bubble">🎵</div>
+          <h3>320kbps MP3 Audio Extraction</h3>
+          <p>Rip crystal-clear sound from music videos, concerts, DJ sets, and podcasts directly into high-bitrate MP3 format with embedded metadata.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-bubble">🛡️</div>
+          <h3>100% Ad-Free & Private</h3>
+          <p>Zero telemetry, zero ads, and zero third-party tracking. All operations run strictly on your local machine using open source backends.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-bubble">🚀</div>
+          <h3>Multi-Fragment Acceleration</h3>
+          <p>Downloads are split into up to 16 concurrent fragments to saturate your network bandwidth and deliver blazing download speeds.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-bubble">🌓</div>
+          <h3>Dark & Light Cyber Themes</h3>
+          <p>Switch between the dark futuristic navy/cyan theme and a clean light slate theme with one click in settings. Zero restart required.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-bubble">📺</div>
+          <h3>Playlists, Channels & Shorts</h3>
+          <p>Support for any YouTube URL structure. Easily fetch individual clips, full multi-video playlists, or vertical Shorts instantly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quality Presets Section -->
+  <section class="quality-section" id="quality">
+    <div class="container">
+      <div class="quality-card">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 1.8rem;">🎬</span>
+          <h3 style="font-size: 1.5rem; font-weight: 800;">Supported Quality Presets</h3>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          FortyFetch selects the best available stream codecs (AV1, VP9, H.264) and highest quality audio (Opus / AAC) to produce seamless MP4 or MP3 output.
+        </p>
+
+        <div class="quality-tags">
+          <div class="q-tag featured">⭐ 4320p 60fps (8K Ultra HD)</div>
+          <div class="q-tag featured">⭐ 2160p 60fps (4K UHD)</div>
+          <div class="q-tag">1440p 60fps (2K QHD)</div>
+          <div class="q-tag">1080p 60fps (Full HD)</div>
+          <div class="q-tag">1080p Standard</div>
+          <div class="q-tag">720p 60fps (HD)</div>
+          <div class="q-tag">480p Compact</div>
+          <div class="q-tag featured">🎵 Audio Only (320kbps MP3)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <a href="#" class="logo" style="margin-bottom: 8px;">
+            <span class="bold">FORTY.</span><span class="cyan">FETCH</span>
+          </a>
+          <p>
+            The premium high-speed YouTube downloader utility for Windows desktop. Built for power users who value speed, privacy, and simplicity.
+          </p>
+        </div>
+
+        <div class="footer-links-group">
+          <div class="footer-col">
+            <h4>Downloads</h4>
+            <a href="https://github.com/ghanenxra/Forty.Fetch/releases/latest/download/FortyFetch_Setup.exe">Windows Setup (.exe)</a>
+            <a href="https://github.com/ghanenxra/Forty.Fetch/releases/latest/download/FortyFetch.exe">Standalone Portable (.exe)</a>
+            <a href="https://github.com/ghanenxra/Forty.Fetch/releases">All Releases & Changelog</a>
+          </div>
+
+          <div class="footer-col">
+            <h4>Connect & Support</h4>
+            <a href="https://github.com/ghanenxra/Forty.Fetch" target="_blank" rel="noopener">GitHub Repository</a>
+            <a href="https://discord.com/users/1323161662739714120" target="_blank" rel="noopener">Discord Profile</a>
+            <a href="https://www.paypal.com/paypalme/ghanenxra" target="_blank" rel="noopener">Buy Me a Coffee (PayPal)</a>
+            <a href="upi://pay?pa=9024810096@fam&pn=FortyQuinn" title="UPI: 9024810096@fam">UPI: 9024810096@fam</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          © 2026 FortyFetch. Open source under MIT license.
+        </div>
+        <div>
+          Powered by <span style="color: #fff; font-weight: 700;">Forty Quinn</span> • <span class="author-badge">CREATED BY GC</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Dynamic GitHub Release Script -->
+  <script>
+    (async function initReleaseInfo() {
+      try {
+        const repo = 'ghanenxra/Forty.Fetch';
+        const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+          headers: { 'Accept': 'application/vnd.github.v3+json' }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        // Update version tags
+        const tag = data.tag_name || 'v3.0.2';
+        document.querySelectorAll('.release-tag').forEach(el => el.textContent = tag);
+
+        // Find binary assets
+        const assets = data.assets || [];
+        const setupAsset = assets.find(a => a.name.toLowerCase().includes('setup') && a.name.endsWith('.exe'));
+        const exeAsset = assets.find(a => !a.name.toLowerCase().includes('setup') && a.name.endsWith('.exe'));
+
+        if (setupAsset) {
+          const btn = document.getElementById('btn-download-setup');
+          const sz = document.getElementById('setup-size');
+          if (btn) btn.href = setupAsset.browser_download_url;
+          if (sz) sz.textContent = `${(setupAsset.size / (1024 * 1024)).toFixed(1)} MB`;
+        }
+
+        if (exeAsset) {
+          const btn = document.getElementById('btn-download-exe');
+          const sz = document.getElementById('exe-size');
+          if (btn) btn.href = exeAsset.browser_download_url;
+          if (sz) sz.textContent = `${(exeAsset.size / (1024 * 1024)).toFixed(1)} MB`;
+        }
+      } catch (err) {
+        console.log('GitHub API fallback active. Default latest release download links enabled.', err);
+      }
+    })();
+  </script>
+</body>
+</html>
