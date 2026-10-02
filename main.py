@@ -5,21 +5,15 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 import traceback
 import webbrowser
-import zipfile
 from tkinter import Canvas, filedialog, messagebox
-from urllib import request as urlrequest
 
 import customtkinter as ctk
-import yt_dlp
-from PIL import Image
-from yt_dlp.version import __version__ as YTDLP_VERSION
 
-# Set High-DPI Awareness for Windows
+# Enable High-DPI Awareness for Windows before any window creation
 try:
     import ctypes
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -90,7 +84,7 @@ def resource_path(relative_path: str) -> str:
 
 
 # ==========================================
-# CUSTOM WIDGETS
+# OPTIMIZED CUSTOM WIDGETS
 # ==========================================
 class CircularProgress(Canvas):
     """Futuristic circular progress gauge with glowing cyan arc and centered percentage."""
@@ -105,42 +99,39 @@ class CircularProgress(Canvas):
         )
         self.size = size
         self.percentage = 0.0
-        self.draw()
 
-    def set_progress(self, percent: float):
-        self.percentage = max(0.0, min(100.0, percent))
-        self.draw()
-
-    def draw(self):
-        self.delete("all")
         margin = 6
         x0, y0 = margin, margin
-        x1, y1 = self.size - margin, self.size - margin
-        width = 6
-
-        # Outer subtle ring
-        self.create_oval(x0, y0, x1, y1, outline="#101B28", width=width)
-
-        # Active progress arc
-        extent = -(self.percentage / 100.0) * 360.0
-        if self.percentage > 0:
-            self.create_arc(
-                x0, y0, x1, y1,
-                start=90,
-                extent=extent,
-                outline=ACCENT_CYAN,
-                width=width,
-                style="arc"
-            )
-
-        # Center percentage text
-        pct_text = f"{int(self.percentage)}%"
-        self.create_text(
-            self.size // 2,
-            self.size // 2,
-            text=pct_text,
-            fill=ACCENT_CYAN if self.percentage > 0 else TEXT_MUTED,
+        x1, y1 = size - margin, size - margin
+        self.ring_id = self.create_oval(x0, y0, x1, y1, outline="#101B28", width=6)
+        self.arc_id = self.create_arc(
+            x0, y0, x1, y1,
+            start=90,
+            extent=0,
+            outline=ACCENT_CYAN,
+            width=6,
+            style="arc"
+        )
+        self.text_id = self.create_text(
+            size // 2,
+            size // 2,
+            text="0%",
+            fill=TEXT_MUTED,
             font=("Segoe UI", 13, "bold")
+        )
+
+    def set_progress(self, percent: float) -> None:
+        self.percentage = max(0.0, min(100.0, percent))
+        extent = -(self.percentage / 100.0) * 359.99
+        self.itemconfig(
+            self.arc_id,
+            extent=extent,
+            outline=ACCENT_CYAN if self.percentage > 0 else "#101B28"
+        )
+        self.itemconfig(
+            self.text_id,
+            text=f"{int(self.percentage)}%",
+            fill=ACCENT_CYAN if self.percentage > 0 else TEXT_MUTED
         )
 
 
@@ -157,9 +148,9 @@ class MountainIllustration(Canvas):
         )
         self.width = width
         self.height = height
-        self.draw()
+        self._render_static_scene()
 
-    def draw(self):
+    def _render_static_scene(self) -> None:
         w = self.width
         h = self.height
 
@@ -198,7 +189,7 @@ class MountainIllustration(Canvas):
         ]
         self.create_polygon(mid_points, fill="#0A1624", outline="")
 
-        # Glowing cyan ridge line
+        # Glowing cyan ridge lines
         ridge_lines = [
             (0, h - 20, 50, h - 50),
             (50, h - 50, 95, h - 30),
@@ -209,7 +200,7 @@ class MountainIllustration(Canvas):
         for x1, y1, x2, y2 in ridge_lines:
             self.create_line(x1, y1, x2, y2, fill="#0F334A", width=1.5)
 
-        # Front mountain layer
+        # Front mountain layer with glowing ridge crests
         front_points = [
             0, h,
             20, h - 32,
@@ -236,12 +227,14 @@ class FortyFetchApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
 
+        # Appearance & Base Window Configuration
         ctk.set_appearance_mode("dark")
         self.title(APP_TITLE)
         self.geometry("1400x900")
         self.minsize(1120, 720)
         self.configure(fg_color=BG_COLOR)
 
+        # Fast paths & state initialization
         self.assets_dir = resource_path("assets")
         self.ffmpeg_exe = os.path.join(self.assets_dir, "ffmpeg.exe")
         self.ffprobe_exe = os.path.join(self.assets_dir, "ffprobe.exe")
@@ -253,22 +246,21 @@ class FortyFetchApp(ctk.CTk):
         self.pending_update_path = None
         self.protocol("WM_DELETE_WINDOW", self.on_exit)
 
-        # Downloads history storage
+        # History, Navigation & Settings
         self.downloads_history: list[dict] = []
         self.active_nav = "home"
-
-        # Load persisted settings
+        self._last_progress_time = 0.0
+        self._qr_image_cached = None
         self.settings = self._load_settings()
 
+        # Window icon (fast local check)
         self._set_icon()
+
+        # Build Primary UI Layout (Home View built first, others lazy-loaded)
         self._build_layout()
 
-        # Lazy checks after UI rendered
-        self.after(350, self.check_bundled_tools)
-        if is_frozen_build():
-            self.after(1000, lambda: threading.Thread(target=self.check_app_update_silently, daemon=True).start())
-        else:
-            self.after(1000, lambda: threading.Thread(target=self.check_and_update_ytdlp, daemon=True).start())
+        # Verify local tools after UI is displayed (zero network, instantaneous)
+        self.after(200, self.check_bundled_tools)
 
     def _load_settings(self) -> dict:
         config_path = os.path.join(os.path.expanduser("~"), ".fortyfetch_settings.json")
@@ -338,14 +330,11 @@ class FortyFetchApp(ctk.CTk):
         self.views_container = ctk.CTkFrame(self.content_area, fg_color="transparent")
         self.views_container.pack(fill="both", expand=True)
 
-        # Initialize View Frames
+        # Views Dictionary (Initialized lazily on demand)
         self.views: dict[str, ctk.CTkFrame] = {}
-        self._init_home_view()
-        self._init_downloads_view()
-        self._init_settings_view()
-        self._init_about_view()
 
-        # Show Home view by default
+        # Initialize ONLY Home View on startup for maximum speed
+        self._init_home_view()
         self.switch_nav("home")
 
     # ==========================================
@@ -426,7 +415,7 @@ class FortyFetchApp(ctk.CTk):
         spacer = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         spacer.pack(fill="both", expand=True)
 
-        # Mountain wireframe illustration (subtle, futuristic)
+        # Mountain wireframe illustration (cached, static render)
         self.mountain_canvas = MountainIllustration(self.sidebar, width=266, height=95)
         self.mountain_canvas.pack(fill="x", pady=(0, 10))
 
@@ -469,6 +458,17 @@ class FortyFetchApp(ctk.CTk):
 
     def switch_nav(self, key: str) -> None:
         self.active_nav = key
+
+        # Lazy initialize views when clicked for the first time
+        if key not in self.views:
+            if key == "downloads":
+                self._init_downloads_view()
+            elif key == "settings":
+                self._init_settings_view()
+            elif key == "about":
+                self._init_about_view()
+
+        # Update button visual states
         for k, btn in self.nav_buttons.items():
             if k == key:
                 btn.configure(
@@ -935,9 +935,12 @@ class FortyFetchApp(ctk.CTk):
             self.url_validation_badge.configure(text="", text_color=TEXT_MUTED)
 
     # ==========================================
-    # VIEW 2: DOWNLOADS (TASK MANAGER)
+    # VIEW 2: DOWNLOADS (LAZY INITIALIZED)
     # ==========================================
     def _init_downloads_view(self) -> None:
+        if "downloads" in self.views:
+            return
+
         view = ctk.CTkFrame(self.views_container, fg_color="transparent")
         self.views["downloads"] = view
 
@@ -993,10 +996,18 @@ class FortyFetchApp(ctk.CTk):
             font=("Segoe UI", 14),
             text_color=TEXT_MUTED
         )
-        self.empty_downloads_label.pack(pady=80)
+
+        if not self.downloads_history:
+            self.empty_downloads_label.pack(pady=80)
+        else:
+            for item in self.downloads_history:
+                self._render_download_card(item)
 
     def _render_download_card(self, item: dict) -> None:
-        if self.empty_downloads_label.winfo_ismapped():
+        if not hasattr(self, "downloads_scroll"):
+            return
+
+        if hasattr(self, "empty_downloads_label") and self.empty_downloads_label.winfo_ismapped():
             self.empty_downloads_label.pack_forget()
 
         card = ctk.CTkFrame(
@@ -1082,20 +1093,24 @@ class FortyFetchApp(ctk.CTk):
 
     def _clear_completed_downloads(self) -> None:
         self.downloads_history.clear()
-        for widget in self.downloads_scroll.winfo_children():
-            widget.destroy()
-        self.empty_downloads_label = ctk.CTkLabel(
-            self.downloads_scroll,
-            text="No active or past downloads in this session.\nPaste a link on the Home page to start fetching.",
-            font=("Segoe UI", 14),
-            text_color=TEXT_MUTED
-        )
-        self.empty_downloads_label.pack(pady=80)
+        if hasattr(self, "downloads_scroll"):
+            for widget in self.downloads_scroll.winfo_children():
+                widget.destroy()
+            self.empty_downloads_label = ctk.CTkLabel(
+                self.downloads_scroll,
+                text="No active or past downloads in this session.\nPaste a link on the Home page to start fetching.",
+                font=("Segoe UI", 14),
+                text_color=TEXT_MUTED
+            )
+            self.empty_downloads_label.pack(pady=80)
 
     # ==========================================
-    # VIEW 3: SETTINGS
+    # VIEW 3: SETTINGS (LAZY INITIALIZED)
     # ==========================================
     def _init_settings_view(self) -> None:
+        if "settings" in self.views:
+            return
+
         view = ctk.CTkScrollableFrame(self.views_container, fg_color="transparent")
         self.views["settings"] = view
 
@@ -1203,9 +1218,12 @@ class FortyFetchApp(ctk.CTk):
         self._save_settings()
 
     # ==========================================
-    # VIEW 4: ABOUT
+    # VIEW 4: ABOUT (LAZY INITIALIZED)
     # ==========================================
     def _init_about_view(self) -> None:
+        if "about" in self.views:
+            return
+
         view = ctk.CTkFrame(self.views_container, fg_color="transparent")
         self.views["about"] = view
 
@@ -1250,7 +1268,7 @@ class FortyFetchApp(ctk.CTk):
 
         ctk.CTkLabel(
             badge,
-            text=f"  Version v{APP_VERSION} (Production Build)  ",
+            text=f"  Version v{APP_VERSION} (Optimized Fast-Launch)  ",
             font=("Consolas", 12, "bold"),
             text_color=TEXT_MUTED
         ).pack(padx=8, pady=4)
@@ -1342,21 +1360,6 @@ class FortyFetchApp(ctk.CTk):
                 "FFmpeg/FFprobe not found in assets or system PATH. Downloads may fail.",
             )
 
-    def check_and_update_ytdlp(self) -> None:
-        try:
-            proc = subprocess.run(
-                [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
-                capture_output=True,
-                text=True,
-                timeout=180,
-            )
-            if proc.returncode == 0:
-                output = (proc.stdout or "") + (proc.stderr or "")
-                if "Successfully installed" in output:
-                    self.after(0, lambda: self.speed_label.configure(text="yt-dlp updated"))
-        except Exception:
-            self.after(0, lambda: self.speed_label.configure(text="yt-dlp check skipped"))
-
     def start_manual_update_thread(self) -> None:
         self.status_label.configure(text="Checking for updates...", text_color=TEXT_PRIMARY)
         self.speed_label.configure(text="Connecting to GitHub release servers...")
@@ -1376,6 +1379,7 @@ class FortyFetchApp(ctk.CTk):
 
     def _fetch_latest_app_release_details(self) -> tuple[str | None, str | None]:
         try:
+            from urllib import request as urlrequest
             req = urlrequest.Request(
                 "https://api.github.com/repos/ghanenxra/Forty.Fetch/releases/latest",
                 headers={"User-Agent": "FortyFetch/1.0"},
@@ -1404,18 +1408,6 @@ class FortyFetchApp(ctk.CTk):
             traceback.print_exc()
             return None, None
 
-    def check_app_update_silently(self) -> None:
-        try:
-            tag, download_url = self._fetch_latest_app_release_details()
-            if tag and download_url and self._is_version_newer(tag, APP_VERSION):
-                temp_dir = tempfile.gettempdir()
-                temp_file_path = os.path.join(temp_dir, f"FortyFetch_update_{tag}.exe")
-                self._download_file(download_url, temp_file_path)
-                if os.path.exists(temp_file_path) and os.path.getsize(temp_file_path) > 1024 * 1024:
-                    self.pending_update_path = temp_file_path
-        except Exception:
-            pass
-
     def prompt_and_install_app_update(self, tag: str, download_url: str) -> None:
         want_update = messagebox.askyesno(
             "FortyFetch Update",
@@ -1435,6 +1427,8 @@ class FortyFetchApp(ctk.CTk):
 
         def download_and_apply():
             try:
+                import tempfile
+                from urllib import request as urlrequest
                 temp_dir = tempfile.gettempdir()
                 temp_file_path = os.path.join(temp_dir, f"FortyFetch_manual_update_{tag}.exe")
                 req = urlrequest.Request(download_url, headers={"User-Agent": "FortyFetch/1.0"})
@@ -1547,8 +1541,13 @@ class FortyFetchApp(ctk.CTk):
 
     def _manual_update_ytdlp(self) -> str:
         if is_frozen_build():
+            try:
+                import yt_dlp.version
+                ytdlp_version = yt_dlp.version.__version__
+            except Exception:
+                ytdlp_version = "unknown"
             latest = self._fetch_latest_ytdlp_version()
-            if latest and self._is_version_newer(latest, YTDLP_VERSION):
+            if latest and self._is_version_newer(latest, ytdlp_version):
                 return (
                     f"yt-dlp update available ({latest}), but packaged build cannot auto-update yt-dlp."
                 )
@@ -1590,6 +1589,7 @@ class FortyFetchApp(ctk.CTk):
             if current_version and not self._is_version_newer(latest_tag, current_version):
                 return "no_update"
 
+            import tempfile
             with tempfile.TemporaryDirectory() as tmp_dir:
                 zip_path = os.path.join(tmp_dir, "ffmpeg_latest.zip")
                 self._download_file(zip_url, zip_path)
@@ -1604,6 +1604,7 @@ class FortyFetchApp(ctk.CTk):
 
     def _fetch_latest_ytdlp_version(self) -> str | None:
         try:
+            from urllib import request as urlrequest
             req = urlrequest.Request(
                 "https://pypi.org/pypi/yt-dlp/json",
                 headers={"User-Agent": "FortyFetch/1.0"},
@@ -1616,6 +1617,7 @@ class FortyFetchApp(ctk.CTk):
             return None
 
     def _fetch_latest_ffmpeg_release(self) -> tuple[str | None, str | None]:
+        from urllib import request as urlrequest
         req = urlrequest.Request(
             "https://api.github.com/repos/GyanD/codexffmpeg/releases/latest",
             headers={"User-Agent": "FortyFetch/1.0"},
@@ -1634,11 +1636,13 @@ class FortyFetchApp(ctk.CTk):
         return tag, zip_url
 
     def _download_file(self, url: str, target_path: str) -> None:
+        from urllib import request as urlrequest
         req = urlrequest.Request(url, headers={"User-Agent": "FortyFetch/1.0"})
         with urlrequest.urlopen(req, timeout=90) as resp, open(target_path, "wb") as out:
             shutil.copyfileobj(resp, out)
 
     def _extract_ffmpeg_bins(self, zip_path: str, extract_dir: str) -> tuple[str, str]:
+        import zipfile
         ffmpeg_candidate = ""
         ffprobe_candidate = ""
         with zipfile.ZipFile(zip_path, "r") as zf:
@@ -1732,6 +1736,9 @@ class FortyFetchApp(ctk.CTk):
             command=pop.destroy,
         ).pack(pady=(0, 20))
 
+    # ==========================================
+    # THROTTLED HIGH-PERFORMANCE PROGRESS HOOK
+    # ==========================================
     def progress_hook(self, data: dict) -> None:
         status = data.get("status")
         if status == "downloading":
@@ -1745,6 +1752,12 @@ class FortyFetchApp(ctk.CTk):
                 p_val = max(0.0, min(100.0, p_val))
             except Exception:
                 p_val = 0.0
+
+            # Throttle UI updates to ~10 FPS (every 100ms) to prevent GUI thread stutter
+            now = time.perf_counter()
+            if now - self._last_progress_time < 0.1 and p_val < 100.0:
+                return
+            self._last_progress_time = now
 
             eta_text = f" • ETA {eta}" if eta else ""
 
@@ -1798,8 +1811,10 @@ class FortyFetchApp(ctk.CTk):
         return fmt, False
 
     def download_video(self, url: str, choice: str) -> None:
-        fmt, is_mp3 = self._format_for_quality(choice)
+        # Lazy import of yt_dlp on background worker thread (zero startup impact)
+        import yt_dlp
 
+        fmt, is_mp3 = self._format_for_quality(choice)
         max_conns = int(self.settings.get("max_connections", 5))
 
         ydl_opts: dict = {
@@ -1885,10 +1900,13 @@ class FortyFetchApp(ctk.CTk):
         qr_path = os.path.join(self.assets_dir, "qr_code.png")
         if os.path.exists(qr_path):
             try:
-                img_data = Image.open(qr_path)
-                qr_img = ctk.CTkImage(light_image=img_data, dark_image=img_data, size=(300, 300))
-                qr_label = ctk.CTkLabel(pop, image=qr_img, text="")
-                qr_label.image = qr_img
+                # Cache decoded image object in memory so reopening is instant
+                if self._qr_image_cached is None:
+                    from PIL import Image
+                    img_data = Image.open(qr_path)
+                    self._qr_image_cached = ctk.CTkImage(light_image=img_data, dark_image=img_data, size=(300, 300))
+                qr_label = ctk.CTkLabel(pop, image=self._qr_image_cached, text="")
+                qr_label.image = self._qr_image_cached
                 qr_label.pack(pady=8)
             except Exception:
                 ctk.CTkLabel(pop, text="Unable to load QR image.", text_color="#FF6B6B", font=("Segoe UI", 14)).pack()
