@@ -10,19 +10,19 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --bg: #05080D;
-      --bg-gradient: radial-gradient(circle at 50% 0%, rgba(0, 217, 255, 0.08) 0%, rgba(5, 8, 13, 0) 65%);
+      --bg-gradient: radial-gradient(circle at 50% -10%, rgba(0, 217, 255, 0.12) 0%, rgba(22, 140, 255, 0.04) 40%, rgba(5, 8, 13, 0) 70%);
       --panel: #0B1420;
       --panel-elevated: #101B28;
       --panel-card: rgba(11, 20, 32, 0.75);
       --border: #162334;
-      --border-glow: rgba(0, 217, 255, 0.3);
+      --border-glow: rgba(0, 217, 255, 0.35);
       --cyan: #00D9FF;
-      --cyan-glow: rgba(0, 217, 255, 0.25);
+      --cyan-glow: rgba(0, 217, 255, 0.28);
       --cyan-dark: #008FA8;
       --blue: #168CFF;
       --green: #10B981;
@@ -61,27 +61,28 @@
       height: 100vh;
       background-size: 50px 50px;
       background-image: 
-        linear-gradient(to right, rgba(22, 35, 52, 0.25) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(22, 35, 52, 0.25) 1px, transparent 1px);
+        linear-gradient(to right, rgba(22, 35, 52, 0.28) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(22, 35, 52, 0.28) 1px, transparent 1px);
       z-index: -1;
       pointer-events: none;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1220px;
       margin: 0 auto;
       padding: 0 24px;
+      position: relative;
     }
 
     /* Header Navigation */
     header {
-      padding: 24px 0;
+      padding: 22px 0;
       position: sticky;
       top: 0;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      background: rgba(5, 8, 13, 0.75);
-      border-bottom: 1px solid rgba(22, 35, 52, 0.6);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background: rgba(5, 8, 13, 0.8);
+      border-bottom: 1px solid rgba(22, 35, 52, 0.7);
       z-index: 100;
     }
 
@@ -97,7 +98,7 @@
       gap: 2px;
       text-decoration: none;
       font-weight: 800;
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       letter-spacing: -0.5px;
     }
     .logo .bold { color: #FFFFFF; }
@@ -112,7 +113,7 @@
     .nav-links a {
       color: var(--text-muted);
       text-decoration: none;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 600;
       transition: color 0.2s ease;
     }
@@ -124,46 +125,79 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(0, 217, 255, 0.1);
+      background: rgba(0, 217, 255, 0.08);
       border: 1px solid var(--cyan);
       color: var(--cyan);
       padding: 8px 18px;
-      border-radius: 10px;
+      border-radius: 9px;
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       text-decoration: none;
       transition: all 0.2s ease;
+      font-family: var(--font-mono);
+      letter-spacing: 0.3px;
     }
     .nav-cta:hover {
       background: var(--cyan);
       color: var(--bg);
-      box-shadow: 0 0 20px var(--cyan-glow);
+      box-shadow: 0 0 22px var(--cyan-glow);
     }
 
-    /* Hero Section */
-    .hero {
-      padding: 80px 0 60px;
-      text-align: center;
+    /* ====================================================
+       MATHEMATICALLY SHAPED HUD HERO SECTION
+       ==================================================== */
+    .hud-hero {
       position: relative;
+      padding: 75px 0 60px;
+      text-align: center;
+      overflow: hidden;
     }
 
-    .version-tag {
+    /* Ambient Mathematical Background Geometry */
+    .math-canvas {
+      position: absolute;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1060px;
+      height: 720px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.75;
+    }
+
+    /* Top HUD Badge Strip */
+    .hud-badge-strip {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      border-radius: 999px;
-      background: rgba(11, 20, 32, 0.9);
-      border: 1px solid var(--border);
-      font-size: 0.85rem;
-      font-weight: 600;
+      gap: 12px;
+      padding: 6px 18px;
+      background: rgba(11, 20, 32, 0.88);
+      border: 1px solid rgba(0, 217, 255, 0.32);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.5px;
       color: var(--text-muted);
       margin-bottom: 24px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      position: relative;
+      box-shadow: 0 0 25px rgba(0, 217, 255, 0.08);
+      backdrop-filter: blur(10px);
+      z-index: 2;
     }
+    .hud-badge-strip::before, .hud-badge-strip::after {
+      content: '';
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border: 1px solid var(--cyan);
+    }
+    .hud-badge-strip::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+    .hud-badge-strip::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--green);
       box-shadow: 0 0 10px var(--green);
@@ -171,41 +205,156 @@
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.85); }
+      50% { opacity: 0.4; transform: scale(0.8); }
     }
 
-    .hero h1 {
-      font-size: clamp(2.4rem, 5.5vw, 4rem);
-      font-weight: 800;
-      letter-spacing: -1.5px;
-      line-height: 1.15;
-      margin-bottom: 20px;
-      max-width: 900px;
-      margin-left: auto;
-      margin-right: auto;
+    /* Hero Titles */
+    .hud-title-wrap {
+      position: relative;
+      z-index: 2;
+      max-width: 960px;
+      margin: 0 auto 28px;
     }
-    .hero h1 .highlight {
-      background: linear-gradient(135deg, #FFFFFF 30%, var(--cyan) 100%);
+
+    .hud-pretitle {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: inline-block;
+      opacity: 0.9;
+    }
+
+    .hud-hero h1 {
+      font-size: clamp(2.5rem, 5.2vw, 4.1rem);
+      font-weight: 800;
+      letter-spacing: -1.8px;
+      line-height: 1.14;
+      color: #FFFFFF;
+      margin-bottom: 18px;
+    }
+    .hud-hero h1 .gradient-cyan {
+      background: linear-gradient(135deg, #FFFFFF 20%, var(--cyan) 85%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      display: block;
     }
 
-    .hero-sub {
-      font-size: clamp(1.05rem, 2vw, 1.25rem);
+    .hud-lead {
+      font-size: clamp(1rem, 1.7vw, 1.15rem);
       color: var(--text-muted);
-      max-width: 760px;
-      margin: 0 auto 36px;
+      max-width: 740px;
+      margin: 0 auto;
+      line-height: 1.65;
       font-weight: 400;
     }
 
-    /* Download Buttons */
+    /* Mathematical Telemetry Deck */
+    .hud-telemetry-deck {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      max-width: 1020px;
+      margin: 36px auto 38px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .telemetry-card {
+      background: rgba(11, 20, 32, 0.75);
+      border: 1px solid var(--border);
+      padding: 18px 16px;
+      position: relative;
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      text-align: left;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .telemetry-card:hover {
+      border-color: var(--cyan);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0, 217, 255, 0.14);
+      background: rgba(16, 27, 40, 0.92);
+    }
+
+    /* Mathematical Corner Reticle Accents */
+    .telemetry-card::before {
+      content: '+';
+      position: absolute;
+      top: -7px;
+      left: -5px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--cyan);
+      line-height: 1;
+    }
+    .telemetry-card::after {
+      content: '+';
+      position: absolute;
+      bottom: -7px;
+      right: -5px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--cyan);
+      line-height: 1;
+    }
+
+    .telemetry-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      margin-bottom: 8px;
+    }
+    .telemetry-idx {
+      color: var(--cyan);
+      font-weight: 700;
+    }
+    .telemetry-status {
+      color: var(--text-muted);
+      background: #060C14;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+
+    .telemetry-val {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      line-height: 1.15;
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+      letter-spacing: -0.5px;
+    }
+
+    .telemetry-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .telemetry-spec {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Mathematical CTA Buttons */
     .download-group {
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 20px;
       flex-wrap: wrap;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
+      position: relative;
+      z-index: 2;
     }
 
     .btn-download-primary {
@@ -215,42 +364,44 @@
       background: var(--cyan);
       color: #05080D;
       padding: 16px 32px;
-      border-radius: 16px;
+      border-radius: 14px;
       text-decoration: none;
-      font-weight: 700;
-      box-shadow: 0 10px 30px var(--cyan-glow);
+      font-weight: 800;
+      box-shadow: 0 0 35px var(--cyan-glow), inset 0 1px 1px rgba(255,255,255,0.4);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       border: 1px solid var(--cyan);
+      position: relative;
     }
     .btn-download-primary:hover {
       transform: translateY(-3px);
-      box-shadow: 0 16px 40px rgba(0, 217, 255, 0.4);
-      background: #26e1ff;
+      box-shadow: 0 0 50px rgba(0, 217, 255, 0.45);
+      background: #2ce2ff;
     }
 
     .btn-download-secondary {
       display: flex;
       align-items: center;
       gap: 16px;
-      background: var(--panel-elevated);
+      background: rgba(16, 27, 40, 0.88);
       color: var(--text);
       padding: 16px 30px;
-      border-radius: 16px;
+      border-radius: 14px;
       text-decoration: none;
-      font-weight: 700;
+      font-weight: 800;
       border: 1px solid var(--border);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.6);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(12px);
     }
     .btn-download-secondary:hover {
       transform: translateY(-3px);
       border-color: var(--cyan);
-      background: #142233;
-      box-shadow: 0 12px 30px rgba(0, 217, 255, 0.15);
+      box-shadow: 0 0 32px rgba(0, 217, 255, 0.22);
+      background: rgba(22, 35, 52, 0.95);
     }
 
     .btn-icon {
-      font-size: 1.8rem;
+      font-size: 1.75rem;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -267,17 +418,21 @@
       font-size: 0.8rem;
       opacity: 0.85;
       font-family: var(--font-mono);
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
+    /* Specs Line */
     .specs-line {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
+      font-family: var(--font-mono);
       color: var(--text-muted);
       display: flex;
       justify-content: center;
-      gap: 16px;
+      gap: 18px;
       flex-wrap: wrap;
-      margin-top: 10px;
+      margin-top: 6px;
+      position: relative;
+      z-index: 2;
     }
     .specs-line span {
       display: inline-flex;
@@ -285,9 +440,11 @@
       gap: 6px;
     }
 
-    /* App Mockup Preview */
+    /* ====================================================
+       APP MOCKUP PREVIEW
+       ==================================================== */
     .preview-container {
-      margin: 60px auto 0;
+      margin: 64px auto 0;
       max-width: 1080px;
       position: relative;
     }
@@ -296,10 +453,10 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 90%;
-      height: 70%;
-      background: radial-gradient(circle, rgba(0, 217, 255, 0.15) 0%, rgba(22, 140, 255, 0.05) 50%, transparent 80%);
-      filter: blur(50px);
+      width: 92%;
+      height: 72%;
+      background: radial-gradient(circle, rgba(0, 217, 255, 0.16) 0%, rgba(22, 140, 255, 0.05) 50%, transparent 80%);
+      filter: blur(55px);
       z-index: 0;
       pointer-events: none;
     }
@@ -311,7 +468,7 @@
       border: 1px solid var(--border);
       border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 217, 255, 0.1);
+      box-shadow: 0 25px 65px -15px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 217, 255, 0.12);
       display: flex;
       flex-direction: column;
       text-align: left;
@@ -327,6 +484,7 @@
       border-bottom: 1px solid var(--border);
       font-size: 0.8rem;
       color: var(--text-muted);
+      font-family: var(--font-mono);
     }
     .window-controls {
       display: flex;
@@ -591,7 +749,9 @@
       color: var(--text-muted);
     }
 
-    /* Features Grid */
+    /* ====================================================
+       FEATURES GRID
+       ==================================================== */
     .features-section {
       padding: 90px 0;
     }
@@ -654,7 +814,9 @@
       line-height: 1.6;
     }
 
-    /* Quality presets table */
+    /* ====================================================
+       QUALITY PRESETS SECTION
+       ==================================================== */
     .quality-section {
       padding: 40px 0 90px;
     }
@@ -690,7 +852,9 @@
       color: var(--cyan);
     }
 
-    /* Footer */
+    /* ====================================================
+       FOOTER
+       ==================================================== */
     footer {
       border-top: 1px solid var(--border);
       background: #04060A;
@@ -751,10 +915,30 @@
     }
 
     /* Responsive adjustments */
+    @media (max-width: 992px) {
+      .hud-telemetry-deck {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
     @media (max-width: 860px) {
       .window-body { flex-direction: column; }
       .app-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
       .nav-links { display: none; }
+    }
+
+    @media (max-width: 580px) {
+      .hud-telemetry-deck {
+        grid-template-columns: 1fr;
+      }
+      .download-group {
+        flex-direction: column;
+        width: 100%;
+      }
+      .btn-download-primary, .btn-download-secondary {
+        width: 100%;
+        justify-content: center;
+      }
     }
   </style>
 </head>
@@ -774,27 +958,112 @@
         <a href="https://github.com/ghanenxra/Forty.Fetch" target="_blank" rel="noopener">GitHub</a>
         <a href="https://discord.com/users/1323161662739714120" target="_blank" rel="noopener">Discord</a>
       </nav>
-      <a href="#download" class="nav-cta">⬇ Download App</a>
+      <a href="#download" class="nav-cta">[ ⬇ DOWNLOAD ]</a>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="hero" id="download">
+  <!-- Mathematically Shaped HUD Hero Section -->
+  <section class="hud-hero" id="download">
     <div class="container">
-      <div class="version-tag">
+      
+      <!-- Mathematical Background SVG Matrix -->
+      <svg class="math-canvas" viewBox="0 0 1000 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Concentric Polar Coordinate Rings -->
+        <circle cx="500" cy="350" r="140" stroke="#00D9FF" stroke-opacity="0.12" stroke-width="1" stroke-dasharray="3 3"/>
+        <circle cx="500" cy="350" r="260" stroke="#00D9FF" stroke-opacity="0.1" stroke-width="1"/>
+        <circle cx="500" cy="350" r="380" stroke="#168CFF" stroke-opacity="0.08" stroke-width="1" stroke-dasharray="6 6"/>
+        <circle cx="500" cy="350" r="470" stroke="#00D9FF" stroke-opacity="0.04" stroke-width="1"/>
+
+        <!-- Mathematical Angle Axis Lines -->
+        <line x1="500" y1="40" x2="500" y2="660" stroke="#00D9FF" stroke-opacity="0.07" stroke-width="1"/>
+        <line x1="80" y1="350" x2="920" y2="350" stroke="#00D9FF" stroke-opacity="0.07" stroke-width="1"/>
+        <line x1="180" y1="110" x2="820" y2="590" stroke="#00D9FF" stroke-opacity="0.04" stroke-width="1" stroke-dasharray="4 8"/>
+        <line x1="180" y1="590" x2="820" y2="110" stroke="#00D9FF" stroke-opacity="0.04" stroke-width="1" stroke-dasharray="4 8"/>
+
+        <!-- Reticle Precision Crosshairs -->
+        <path d="M490 350H510M500 340V360" stroke="#00D9FF" stroke-opacity="0.4" stroke-width="1.5"/>
+        <path d="M230 350H250M240 340V360" stroke="#00D9FF" stroke-opacity="0.25" stroke-width="1"/>
+        <path d="M750 350H770M760 340V360" stroke="#00D9FF" stroke-opacity="0.25" stroke-width="1"/>
+        <path d="M500 85H520M510 75V95" stroke="#00D9FF" stroke-opacity="0.25" stroke-width="1"/>
+        <path d="M500 615H520M510 605V625" stroke="#00D9FF" stroke-opacity="0.25" stroke-width="1"/>
+
+        <!-- Floating Telemetry Coordinates -->
+        <text x="515" y="70" fill="#00D9FF" fill-opacity="0.35" font-family="monospace" font-size="10">POLAR_AXIS // 90°00'N</text>
+        <text x="60" y="342" fill="#00D9FF" fill-opacity="0.3" font-family="monospace" font-size="10">X: 001.40 // Y: 009.00</text>
+        <text x="780" y="342" fill="#00D9FF" fill-opacity="0.3" font-family="monospace" font-size="10">FPS_SYNC // 60.00 FPS</text>
+        <text x="515" y="650" fill="#00D9FF" fill-opacity="0.3" font-family="monospace" font-size="10">FRAME_MATRIX // 7680x4320 UHD</text>
+      </svg>
+
+      <!-- HUD Top Status Pill -->
+      <div class="hud-badge-strip">
         <span class="status-dot"></span>
-        <span>FortyFetch <strong class="release-tag">v3.0.2</strong> • Fast Windows Downloader</span>
+        <span style="color: var(--cyan); font-weight: 700;">SYS::ONLINE</span>
+        <span style="opacity: 0.4;">|</span>
+        <span>BUILD <strong class="release-tag" style="color: #fff;">v3.0.2</strong></span>
+        <span style="opacity: 0.4;">|</span>
+        <span>LATENCY &lt; 0.1ms</span>
+        <span style="opacity: 0.4;">|</span>
+        <span>ARCH: WIN_x64</span>
       </div>
 
-      <h1>
-        High-Speed YouTube Downloads.<br>
-        <span class="highlight">Re-engineered for Windows.</span>
-      </h1>
+      <!-- Hero Heading With Mathematical Balance -->
+      <div class="hud-title-wrap">
+        <span class="hud-pretitle">[ HIGH-PRECISION STREAM PROTOCOL ]</span>
+        <h1>
+          Next-Gen Media Engine.<br>
+          <span class="gradient-cyan">Engineered for 8K Velocity.</span>
+        </h1>
+        <p class="hud-lead">
+          High-bandwidth desktop downloader architected for ultra-high bitrate <strong>8K 60fps</strong> video and studio-grade <strong>320kbps MP3 audio</strong>. Zero ads, zero tracking, and pure native Windows responsiveness.
+        </p>
+      </div>
 
-      <p class="hero-sub">
-        Download videos up to <strong>8K 60fps</strong>, lossless <strong>320kbps MP3 audio</strong>, full playlists, and Shorts. 
-        Native Windows desktop speed with zero telemetry, zero ads, and instant launching.
-      </p>
+      <!-- Geometric Mathematical Telemetry Grid (Decongested Visual Modules) -->
+      <div class="hud-telemetry-deck">
+        <!-- Module 1: 8K Video -->
+        <div class="telemetry-card">
+          <div class="telemetry-head">
+            <span class="telemetry-idx">[ 01 ]</span>
+            <span class="telemetry-status">AV1 / VP9</span>
+          </div>
+          <div class="telemetry-val">4320p</div>
+          <div class="telemetry-label">8K 60FPS Ultra HD</div>
+          <div class="telemetry-spec">FFmpeg Stream Muxing</div>
+        </div>
+
+        <!-- Module 2: 320k Audio -->
+        <div class="telemetry-card">
+          <div class="telemetry-head">
+            <span class="telemetry-idx">[ 02 ]</span>
+            <span class="telemetry-status">320 KBPS</span>
+          </div>
+          <div class="telemetry-val">MP3 Core</div>
+          <div class="telemetry-label">Studio Lossless Audio</div>
+          <div class="telemetry-spec">ID3 & Cover Embed</div>
+        </div>
+
+        <!-- Module 3: 16 Fragments -->
+        <div class="telemetry-card">
+          <div class="telemetry-head">
+            <span class="telemetry-idx">[ 03 ]</span>
+            <span class="telemetry-status">16x PIPE</span>
+          </div>
+          <div class="telemetry-val">Parallel</div>
+          <div class="telemetry-label">Multi-Fragment Engine</div>
+          <div class="telemetry-spec">Bandwidth Saturation</div>
+        </div>
+
+        <!-- Module 4: 0% Ads / Pure Local -->
+        <div class="telemetry-card">
+          <div class="telemetry-head">
+            <span class="telemetry-idx">[ 04 ]</span>
+            <span class="telemetry-status">0.0% ADS</span>
+          </div>
+          <div class="telemetry-val">Clean I/O</div>
+          <div class="telemetry-label">Zero Tracking / Telemetry</div>
+          <div class="telemetry-spec">100% Local Desktop Code</div>
+        </div>
+      </div>
 
       <!-- Download Action Buttons (Connected directly to latest commit release) -->
       <div class="download-group">
@@ -816,10 +1085,13 @@
       </div>
 
       <div class="specs-line">
-        <span>✓ Direct 1-Click Download</span>
-        <span>✓ Always Latest Release</span>
-        <span>✓ Windows 10 & 11 (64-bit)</span>
-        <span>✓ Bundled FFmpeg Core</span>
+        <span>[ ARCH: x86_64 ]</span>
+        <span>•</span>
+        <span>[ OS: WINDOWS 10 / 11 ]</span>
+        <span>•</span>
+        <span>[ FFMPEG CORE BUNDLED ]</span>
+        <span>•</span>
+        <span>[ 100% OPEN SOURCE ]</span>
       </div>
 
       <!-- App Interface Showcase Mockup -->
