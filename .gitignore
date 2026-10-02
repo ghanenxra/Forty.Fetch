@@ -13,7 +13,7 @@ __pycache__/
 # PyInstaller / Packaging build output
 build/
 dist/
-*.spec
+*.log
 
 # Downloaded media files (if any are saved to workspace)
 *.mp3

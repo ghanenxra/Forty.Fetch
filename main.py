@@ -887,5 +887,24 @@ class FortyFetchApp(ctk.CTk):
 if __name__ == "__main__":
     if should_exit_early_for_packaged_relaunch():
         sys.exit(0)
-    app = FortyFetchApp()
-    app.mainloop()
+    try:
+        app = FortyFetchApp()
+        app.mainloop()
+    except Exception:
+        import traceback as _tb
+        err = _tb.format_exc()
+        try:
+            log_path = os.path.join(
+                os.path.dirname(sys.executable if is_frozen_build() else __file__),
+                "FortyFetch_crash.log",
+            )
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write(err)
+        except Exception:
+            log_path = "unknown"
+        try:
+            from tkinter import messagebox as _mb
+            _mb.showerror("FortyFetch - Crash", f"Fatal error:\n{err}\n\nLog: {log_path}")
+        except Exception:
+            pass
+        sys.exit(1)
