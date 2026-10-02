@@ -25,7 +25,7 @@ CARD_COLOR = "#16181F"
 INPUT_COLOR = "#06080D"
 TEXT_MUTED = "#8D96A7"
 
-APP_VERSION = "3.0.1"
+APP_VERSION = "3.0.2"
 APP_TITLE = f"FortyFetch v{APP_VERSION} - High Speed Youtube Downloader"
 DISCORD_URL = "https://discord.com/users/1323161662739714120"
 GITHUB_URL = "https://github.com/ghanenxra"
