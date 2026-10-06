@@ -778,6 +778,111 @@
       font-weight: 700;
     }
 
+    /* ====================================================
+       DOWNLOAD COUNTER (fixed bottom-left)
+       ==================================================== */
+    .download-counter {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: rgba(11, 20, 32, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 200;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    .download-counter.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .download-counter:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 18px rgba(0, 217, 255, 0.15);
+    }
+    .counter-icon {
+      font-size: 1rem;
+    }
+    .counter-number {
+      font-weight: 700;
+      color: var(--cyan);
+      font-size: 0.85rem;
+    }
+
+    /* ====================================================
+       SMARTSCREEN SAFETY NOTICE
+       ==================================================== */
+    .smartscreen-section {
+      padding: 40px 0 60px;
+    }
+    .smartscreen-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .smartscreen-card h3 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+    .smartscreen-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+    .smartscreen-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .ss-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 18px;
+      background: var(--panel-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .ss-step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(0, 217, 255, 0.15);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    .ss-step-text {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .ss-step-text strong {
+      color: var(--cyan);
+    }
+
     /* Responsive adjustments */
     @media (max-width: 860px) {
       .window-body { flex-direction: column; }
@@ -785,12 +890,19 @@
       .nav-links { display: none; }
       .download-group { flex-direction: column; }
       .btn-download-primary, .btn-download-secondary { width: 100%; justify-content: center; }
+      .download-counter { bottom: 12px; left: 12px; font-size: 0.7rem; padding: 6px 10px; }
     }
   </style>
 </head>
 <body>
   <div class="bg-grid"></div>
   <div class="ambient-glow"></div>
+
+  <!-- Download Counter (bottom-left) -->
+  <div class="download-counter" id="download-counter">
+    <span class="counter-icon">⬇</span>
+    <span><span class="counter-number" id="dl-count">—</span> downloads</span>
+  </div>
 
   <!-- Header -->
   <header>
@@ -802,6 +914,7 @@
         <a href="#features">Features</a>
         <a href="#preview">Interface</a>
         <a href="#quality">8K Quality</a>
+        <a href="#smartscreen">SmartScreen</a>
         <a href="https://github.com/ghanenxra/Forty.Fetch" target="_blank" rel="noopener">GitHub</a>
         <a href="https://discord.com/users/1323161662739714120" target="_blank" rel="noopener">Discord</a>
       </nav>
@@ -1046,6 +1159,38 @@
     </div>
   </section>
 
+  <!-- Windows SmartScreen Safety Notice -->
+  <section class="smartscreen-section" id="smartscreen">
+    <div class="container">
+      <div class="smartscreen-card">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 1.8rem;">🛡️</span>
+          <h3>Windows SmartScreen Notice</h3>
+        </div>
+        <p>
+          When you first launch FortyFetch, Windows may show a <strong style="color: #fff;">SmartScreen</strong> warning saying <em>"Windows protected your PC"</em>. This happens because the app is <strong style="color: #fff;">not code-signed with an expensive certificate</strong> — it does NOT mean the app is unsafe.
+        </p>
+        <p>
+          FortyFetch is <strong style="color: var(--cyan);">100% open source</strong> — you can inspect every line of code on <a href="https://github.com/ghanenxra/Forty.Fetch" target="_blank" rel="noopener" style="color: var(--cyan); text-decoration: underline;">GitHub</a>. To proceed past the warning:
+        </p>
+        <div class="smartscreen-steps">
+          <div class="ss-step">
+            <div class="ss-step-num">1</div>
+            <div class="ss-step-text">Click <strong>"More info"</strong> on the SmartScreen popup</div>
+          </div>
+          <div class="ss-step">
+            <div class="ss-step-num">2</div>
+            <div class="ss-step-text">Click <strong>"Run anyway"</strong> to launch the app</div>
+          </div>
+          <div class="ss-step">
+            <div class="ss-step-num">3</div>
+            <div class="ss-step-text">Windows remembers your choice — <strong>you'll only see this once</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer>
     <div class="container">
@@ -1091,38 +1236,66 @@
   <!-- Dynamic GitHub Release Script -->
   <script>
     (async function initReleaseInfo() {
+      const repo = 'ghanenxra/Forty.Fetch';
+
+      // --- Fetch latest release info (version, sizes, URLs) ---
       try {
-        const repo = 'ghanenxra/Forty.Fetch';
         const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
           headers: { 'Accept': 'application/vnd.github.v3+json' }
         });
-        if (!res.ok) return;
-        const data = await res.json();
-        
-        // Update version tags
-        const tag = data.tag_name || 'v3.0.2';
-        document.querySelectorAll('.release-tag').forEach(el => el.textContent = tag);
+        if (res.ok) {
+          const data = await res.json();
 
-        // Find binary assets
-        const assets = data.assets || [];
-        const setupAsset = assets.find(a => a.name.toLowerCase().includes('setup') && a.name.endsWith('.exe'));
-        const exeAsset = assets.find(a => !a.name.toLowerCase().includes('setup') && a.name.endsWith('.exe'));
+          // Update version tags
+          const tag = data.tag_name || 'v3.0.2';
+          document.querySelectorAll('.release-tag').forEach(el => el.textContent = tag);
 
-        if (setupAsset) {
-          const btn = document.getElementById('btn-download-setup');
-          const sz = document.getElementById('setup-size');
-          if (btn) btn.href = setupAsset.browser_download_url;
-          if (sz) sz.textContent = `${(setupAsset.size / (1024 * 1024)).toFixed(1)} MB`;
-        }
+          // Find binary assets
+          const assets = data.assets || [];
+          const setupAsset = assets.find(a => a.name.toLowerCase().includes('setup') && a.name.endsWith('.exe'));
+          const exeAsset = assets.find(a => !a.name.toLowerCase().includes('setup') && a.name.endsWith('.exe'));
 
-        if (exeAsset) {
-          const btn = document.getElementById('btn-download-exe');
-          const sz = document.getElementById('exe-size');
-          if (btn) btn.href = exeAsset.browser_download_url;
-          if (sz) sz.textContent = `${(exeAsset.size / (1024 * 1024)).toFixed(1)} MB`;
+          if (setupAsset) {
+            const btn = document.getElementById('btn-download-setup');
+            const sz = document.getElementById('setup-size');
+            if (btn) btn.href = setupAsset.browser_download_url;
+            if (sz) sz.textContent = `${(setupAsset.size / (1024 * 1024)).toFixed(1)} MB`;
+          }
+
+          if (exeAsset) {
+            const btn = document.getElementById('btn-download-exe');
+            const sz = document.getElementById('exe-size');
+            if (btn) btn.href = exeAsset.browser_download_url;
+            if (sz) sz.textContent = `${(exeAsset.size / (1024 * 1024)).toFixed(1)} MB`;
+          }
         }
       } catch (err) {
         console.log('GitHub API fallback active. Default latest release download links enabled.', err);
+      }
+
+      // --- Fetch total download count across ALL releases ---
+      try {
+        const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100`, {
+          headers: { 'Accept': 'application/vnd.github.v3+json' }
+        });
+        if (res.ok) {
+          const releases = await res.json();
+          let totalDownloads = 0;
+          for (const release of releases) {
+            for (const asset of (release.assets || [])) {
+              totalDownloads += asset.download_count || 0;
+            }
+          }
+
+          // Format number with commas (e.g. 1,234)
+          const formatted = totalDownloads.toLocaleString('en-US');
+          const counterEl = document.getElementById('dl-count');
+          const counterBox = document.getElementById('download-counter');
+          if (counterEl) counterEl.textContent = formatted;
+          if (counterBox) counterBox.classList.add('visible');
+        }
+      } catch (err) {
+        console.log('Download counter unavailable.', err);
       }
     })();
   </script>
