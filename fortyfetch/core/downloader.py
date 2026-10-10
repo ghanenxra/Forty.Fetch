@@ -11,6 +11,34 @@ import shutil
 import webbrowser
 from tkinter import filedialog, messagebox
 
+class CustomYtLogger:
+    def __init__(self, console_text, after_method):
+        self.console_text = console_text
+        self.after = after_method
+
+    def _write_log(self, msg: str):
+        # Strip some annoying ANSI escape sequences if any exist
+        msg = re.sub(r'\x1b\[[0-9;]*m', '', msg)
+        def _update():
+            self.console_text.configure(state="normal")
+            self.console_text.insert("end", msg + "\n")
+            self.console_text.see("end")
+            self.console_text.configure(state="disabled")
+        self.after(0, _update)
+
+    def debug(self, msg):
+        if not msg.startswith("[debug] "):
+            self._write_log(f"fortyfetch@engine:~$ {msg}")
+
+    def info(self, msg):
+        self._write_log(f"fortyfetch@engine:~$ {msg}")
+
+    def warning(self, msg):
+        self._write_log(f"fortyfetch@engine:~$ [WARN] {msg}")
+
+    def error(self, msg):
+        self._write_log(f"fortyfetch@engine:~$ [ERROR] {msg}")
+
 class DownloaderMixin:
         def _resolve_ffmpeg_location(self) -> str | None:
             if os.path.exists(self.ffmpeg_exe) and os.path.exists(self.ffprobe_exe):
@@ -82,6 +110,12 @@ class DownloaderMixin:
             self.circular_progress.set_progress(0)
             self.speed_label.configure(text="Establishing stream connection...")
 
+            if hasattr(self, "console_text"):
+                self.console_text.configure(state="normal")
+                self.console_text.delete("0.0", "end")
+                self.console_text.insert("0.0", f"fortyfetch@engine:~$ Initializing core network sequence...\nfortyfetch@engine:~$ Target Stream: {url}\n")
+                self.console_text.configure(state="disabled")
+
             choice = self.selected_quality.get()
             threading.Thread(target=self.download_video, args=(url, choice), daemon=True).start()
 
@@ -111,11 +145,13 @@ class DownloaderMixin:
             fmt, is_mp3 = self._format_for_quality(choice)
             max_conns = int(self.settings.get("max_connections", 5))
 
+            is_console = getattr(self, "console_mode_var", None) and self.console_mode_var.get()
+
             ydl_opts: dict = {
                 "progress_hooks": [self.progress_hook],
                 "outtmpl": os.path.join(self.save_path, "%(title).180B [%(id)s].%(ext)s"),
                 "noplaylist": True,
-                "quiet": True,
+                "quiet": not is_console,
                 "ffmpeg_location": self.ffmpeg_location,
                 "format": fmt,
                 "merge_output_format": "mp4",
@@ -124,6 +160,9 @@ class DownloaderMixin:
                 "fragment_retries": 10,
                 "concurrent_fragment_downloads": max_conns,
             }
+
+            if is_console and hasattr(self, "console_text"):
+                ydl_opts["logger"] = CustomYtLogger(self.console_text, self.after)
 
             if is_mp3:
                 ydl_opts["postprocessors"] = [

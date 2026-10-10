@@ -258,6 +258,26 @@ class HomeViewMixin:
             )
             self.download_btn.pack(anchor="center")
 
+            # Toggle Row for Console Mode
+            toggle_row = ctk.CTkFrame(view, fg_color="transparent")
+            toggle_row.pack(fill="x", pady=(4, 2), padx=4)
+            
+            self.console_mode_var = ctk.BooleanVar(value=False)
+            self.console_toggle = ctk.CTkSwitch(
+                toggle_row,
+                text="Console Mode",
+                command=self.toggle_console_mode,
+                variable=self.console_mode_var,
+                font=("Consolas", 11, "bold"),
+                text_color=TEXT_MUTED,
+                onvalue=True,
+                offvalue=False,
+                progress_color=ACCENT_CYAN,
+                switch_width=36,
+                switch_height=18
+            )
+            self.console_toggle.pack(side="right")
+
             # 4. Progress Card
             self.progress_card = ctk.CTkFrame(
                 view,
@@ -331,12 +351,45 @@ class HomeViewMixin:
                 text_color=TEXT_MUTED
             ).pack(anchor="e")
 
+            # 4.5 Console Card
+            self.console_card = ctk.CTkFrame(
+                view,
+                fg_color="#000000",
+                corner_radius=12,
+                border_width=1,
+                border_color="#333333"
+            )
+            # Mac-like header
+            c_header = ctk.CTkFrame(self.console_card, fg_color="#1E1E1E", corner_radius=12, height=28)
+            c_header.pack(fill="x", side="top")
+            
+            # macOS traffic lights
+            dots = ctk.CTkFrame(c_header, fg_color="transparent")
+            dots.pack(side="left", padx=12, pady=6)
+            ctk.CTkFrame(dots, width=12, height=12, corner_radius=6, fg_color="#FF5F56").pack(side="left", padx=3)
+            ctk.CTkFrame(dots, width=12, height=12, corner_radius=6, fg_color="#FFBD2E").pack(side="left", padx=3)
+            ctk.CTkFrame(dots, width=12, height=12, corner_radius=6, fg_color="#27C93F").pack(side="left", padx=3)
+
+            ctk.CTkLabel(c_header, text="bash — fortyfetch-engine", font=("Consolas", 10), text_color="#888888").place(relx=0.5, rely=0.5, anchor="center")
+
+            self.console_text = ctk.CTkTextbox(
+                self.console_card,
+                fg_color="#000000",
+                text_color="#00FF00",
+                font=("Consolas", 11),
+                height=160,
+                wrap="word"
+            )
+            self.console_text.pack(fill="both", expand=True, padx=8, pady=8)
+            self.console_text.insert("0.0", "fortyfetch@engine:~$ Ready for commands...\n")
+            self.console_text.configure(state="disabled")
+
             # 5. Bottom Actions Row
-            footer_row = ctk.CTkFrame(view, fg_color="transparent")
-            footer_row.pack(fill="x", pady=(2, 0))
+            self.footer_row = ctk.CTkFrame(view, fg_color="transparent")
+            self.footer_row.pack(fill="x", pady=(2, 0))
 
             ctk.CTkButton(
-                footer_row,
+                self.footer_row,
                 text="☕  Buy Me a Coffee",
                 width=150,
                 height=32,
@@ -349,7 +402,7 @@ class HomeViewMixin:
             ).pack(side="left", padx=(0, 8))
 
             ctk.CTkButton(
-                footer_row,
+                self.footer_row,
                 text="Discord",
                 width=100,
                 height=32,
@@ -362,7 +415,7 @@ class HomeViewMixin:
             ).pack(side="left", padx=(0, 8))
 
             ctk.CTkButton(
-                footer_row,
+                self.footer_row,
                 text="GitHub",
                 width=95,
                 height=32,
@@ -377,7 +430,7 @@ class HomeViewMixin:
             ).pack(side="left")
 
             ctk.CTkLabel(
-                footer_row,
+                self.footer_row,
                 text="CREATED BY GC",
                 font=("Segoe UI", 11, "bold"),
                 text_color=ACCENT_PINK
@@ -411,4 +464,13 @@ class HomeViewMixin:
             pop.attributes("-topmost", True)
             pop.after(250, lambda: pop.attributes("-topmost", False))
             pop.focus_force()
+
+        def toggle_console_mode(self) -> None:
+            if self.console_mode_var.get():
+                self.progress_card.pack_forget()
+                self.console_card.pack(fill="x", pady=(0, 10), before=self.footer_row.master.winfo_children()[-1])
+            else:
+                self.console_card.pack_forget()
+                self.progress_card.pack(fill="x", pady=(0, 10), before=self.footer_row.master.winfo_children()[-1])
+
 
